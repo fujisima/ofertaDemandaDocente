@@ -1,0 +1,10 @@
+Package: ofertaDemandaDocente
+Title: Simulador de oferta e demanda de docentes
+Version: 0.0.0.9000
+Authors@R: 
+    person("Leonardo", "Yada", , "leonardo@fujisimaanalytics.com", role = c("aut", "cre"))
+Description: Este pacote permite estimar a demanda e oferta de docentes no Brasil por UF.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0
