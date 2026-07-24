@@ -12,7 +12,10 @@ motherduck_connect <- function(dbdir = ":memory:", database = "fujisima_db") {
     )
   }
 
-  Sys.setenv(MOTHERDUCK_TOKEN = token)
+  Sys.setenv(
+    MOTHERDUCK_TOKEN = token,
+    motherduck_token = token
+  )
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = dbdir)
   tryCatch(
     DBI::dbExecute(con, "LOAD motherduck"),
