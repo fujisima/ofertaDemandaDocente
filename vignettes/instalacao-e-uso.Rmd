@@ -46,11 +46,22 @@ Carregue o pacote:
 library(ofertaDemandaDocente)
 ```
 
-## Configuração do MotherDuck
+## Dados incluídos no pacote
 
 As funções de leitura `ler_matricula_faixaetaria()` e
-`ler_projecao_populacional_ibge()` dependem de acesso ao MotherDuck. Configure o
-token no arquivo `.Renviron`:
+`ler_projecao_populacional_ibge()` leem, por padrão, snapshots em Parquet
+incluídos no pacote. Assim, depois da instalação, é possível carregar os dados
+sem configurar conexão com o MotherDuck:
+
+```{r, eval = FALSE}
+matriculas <- ler_matricula_faixaetaria()
+populacao <- ler_projecao_populacional_ibge()
+```
+
+## Configuração do MotherDuck
+
+O MotherDuck continua disponível como fonte opcional para consultar os dados
+diretamente no banco. Para usá-lo, configure o token no arquivo `.Renviron`:
 
 ```{r, eval = FALSE}
 MOTHERDUCK_TOKEN="seu-token"
@@ -103,13 +114,20 @@ projecao_logistica_target(
 )
 ```
 
-## Fluxo completo com dados do MotherDuck
+## Fluxo completo com dados do pacote
 
-Com o token configurado, leia os dados de matrículas e população:
+Leia os dados de matrículas e população incluídos no pacote:
 
 ```{r, eval = FALSE}
 matriculas <- ler_matricula_faixaetaria()
 populacao <- ler_projecao_populacional_ibge()
+```
+
+Para consultar diretamente o MotherDuck, use `fonte = "motherduck"`:
+
+```{r, eval = FALSE}
+matriculas <- ler_matricula_faixaetaria(fonte = "motherduck")
+populacao <- ler_projecao_populacional_ibge(fonte = "motherduck")
 ```
 
 Calcule os indicadores observados:

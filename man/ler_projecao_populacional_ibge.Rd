@@ -4,11 +4,15 @@
 \alias{ler_projecao_populacional_ibge}
 \title{Ler dados de projecao populacional do IBGE}
 \usage{
-ler_projecao_populacional_ibge(con = NULL)
+ler_projecao_populacional_ibge(fonte = c("pacote", "motherduck"), con = NULL)
 }
 \arguments{
-\item{con}{Conexao opcional com MotherDuck. Se omitida, uma nova conexao sera
-aberta e fechada automaticamente.}
+\item{fonte}{Fonte dos dados. Use \code{"pacote"} para ler o snapshot Parquet
+instalado com o pacote ou \code{"motherduck"} para consultar o MotherDuck.}
+
+\item{con}{Conexao opcional com MotherDuck. Usada apenas quando
+\code{fonte = "motherduck"}. Se omitida, uma nova conexao sera aberta e fechada
+automaticamente. Se informada sem \code{fonte}, a fonte MotherDuck sera usada.}
 }
 \value{
 Data frame com populacao projetada por UF, etapa de ensino e ano.

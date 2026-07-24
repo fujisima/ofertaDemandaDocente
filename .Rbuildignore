@@ -11,5 +11,6 @@
 ^\.Rprofile$
 ^\.gitignore$
 ^_targets$
+^data-raw$
 ^explorations$
 ^\.\.Rcheck$

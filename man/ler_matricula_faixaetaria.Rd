@@ -4,11 +4,15 @@
 \alias{ler_matricula_faixaetaria}
 \title{Ler dados de matricula por faixa etaria}
 \usage{
-ler_matricula_faixaetaria(con = NULL)
+ler_matricula_faixaetaria(fonte = c("pacote", "motherduck"), con = NULL)
 }
 \arguments{
-\item{con}{Conexao opcional com MotherDuck. Se omitida, uma nova conexao sera
-aberta e fechada automaticamente.}
+\item{fonte}{Fonte dos dados. Use \code{"pacote"} para ler o snapshot Parquet
+instalado com o pacote ou \code{"motherduck"} para consultar o MotherDuck.}
+
+\item{con}{Conexao opcional com MotherDuck. Usada apenas quando
+\code{fonte = "motherduck"}. Se omitida, uma nova conexao sera aberta e fechada
+automaticamente. Se informada sem \code{fonte}, a fonte MotherDuck sera usada.}
 }
 \value{
 Data frame com matriculas por UF, etapa de ensino, ano e faixa etaria.
