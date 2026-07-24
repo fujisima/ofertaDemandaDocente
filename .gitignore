@@ -5,6 +5,7 @@
 .positai
 .DS_Store
 .Renviron
+AGENTS.md
 _targets/
 *.tar.gz
 *.Rcheck
