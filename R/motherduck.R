@@ -36,3 +36,29 @@ motherduck_read_sql <- function(path, con = motherduck_connect()) {
   sql <- paste(readLines(path, warn = FALSE), collapse = "\n")
   DBI::dbGetQuery(con, sql)
 }
+
+sql_path <- function(file) {
+  configured_dir <- getOption("ofertaDemandaDocente.sql_dir")
+
+  if (!is.null(configured_dir)) {
+    configured_path <- file.path(configured_dir, file)
+
+    if (file.exists(configured_path)) {
+      return(configured_path)
+    }
+  }
+
+  installed_path <- system.file("sql", file, package = "ofertaDemandaDocente")
+
+  if (nzchar(installed_path)) {
+    return(installed_path)
+  }
+
+  development_path <- file.path("sql", file)
+
+  if (file.exists(development_path)) {
+    return(development_path)
+  }
+
+  stop(sprintf("Arquivo SQL `%s` nao encontrado.", file), call. = FALSE)
+}

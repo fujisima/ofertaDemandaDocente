@@ -6,3 +6,10 @@
 ^\.positai$
 ^\.claude$
 ^\.Renviron$
+^\.Renviron\.example$
+^\.Rhistory$
+^\.Rprofile$
+^\.gitignore$
+^_targets$
+^explorations$
+^\.\.Rcheck$
