@@ -1,0 +1,176 @@
+---
+title: "Instalação e uso do ofertaDemandaDocente"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Instalação e uso do ofertaDemandaDocente}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Objetivo
+
+O pacote `ofertaDemandaDocente` apoia a estimativa de indicadores de acesso
+escolar e a projeção de matrículas por UF, etapa de ensino e ano. O fluxo geral
+é:
+
+1. Ler dados de matrículas e população.
+2. Calcular indicadores observados.
+3. Definir metas futuras.
+4. Projetar indicadores e matrículas.
+
+## Instalação
+
+Em um projeto local, instale a partir da raiz do pacote:
+
+```{r, eval = FALSE}
+install.packages("remotes")
+remotes::install_local(".")
+```
+
+Se o pacote estiver publicado em um repositório GitHub, instale com:
+
+```{r, eval = FALSE}
+remotes::install_github("fujisima/ofertaDemandaDocente")
+```
+
+Carregue o pacote:
+
+```{r}
+library(ofertaDemandaDocente)
+```
+
+## Configuração do MotherDuck
+
+As funções de leitura `ler_matricula_faixaetaria()` e
+`ler_projecao_populacional_ibge()` dependem de acesso ao MotherDuck. Configure o
+token no arquivo `.Renviron`:
+
+```{r, eval = FALSE}
+MOTHERDUCK_TOKEN="seu-token"
+```
+
+Depois de salvar o arquivo, reinicie a sessão R. Em seguida, confirme se a
+variável está disponível:
+
+```{r, eval = FALSE}
+Sys.getenv("MOTHERDUCK_TOKEN")
+```
+
+## Cálculos básicos
+
+A taxa líquida de matrícula é calculada a partir das matrículas na faixa etária
+adequada e da população correspondente:
+
+```{r}
+taxa_liquida_matricula(
+  matriculas_faixa_adequada = 850,
+  populacao_faixa_adequada = 1000
+)
+```
+
+O percentual de matrículas fora da faixa etária usa o total de matrículas como
+denominador:
+
+```{r}
+percentual_matriculas_fora_faixa(
+  matriculas_fora_faixa = 120,
+  total_matriculas = 1000
+)
+```
+
+## Projeção logística
+
+Use `projecao_logistica_target()` para criar uma trajetória entre um valor
+observado e uma meta futura:
+
+```{r}
+anos <- 2026:2036
+
+projecao_logistica_target(
+  t0 = 2025,
+  tf = 2036,
+  lim = 100,
+  obs0 = 78,
+  target = 95,
+  t = anos
+)
+```
+
+## Fluxo completo com dados do MotherDuck
+
+Com o token configurado, leia os dados de matrículas e população:
+
+```{r, eval = FALSE}
+matriculas <- ler_matricula_faixaetaria()
+populacao <- ler_projecao_populacional_ibge()
+```
+
+Calcule os indicadores observados:
+
+```{r, eval = FALSE}
+indicadores_observados <- calcular_indicadores_matricula_observados(
+  matriculas = matriculas,
+  populacao = populacao,
+  anos = 2016:2025
+)
+```
+
+Defina metas gerais por etapa de ensino. Os nomes dos vetores devem corresponder
+aos valores de `ETAPA_ENSINO` usados nos dados:
+
+```{r}
+metas <- criar_metas_indicadores_gerais(
+  taxa_liquida_matricula = c(
+    CRE = 60,
+    PRE = 98,
+    AI = 99,
+    AF = 98,
+    EM = 95
+  ),
+  percentual_matriculas_fora_faixa = c(
+    CRE = 5,
+    PRE = 3,
+    AI = 2,
+    AF = 4,
+    EM = 6
+  ),
+  ano_target = 2036
+)
+
+metas
+```
+
+Por fim, projete indicadores e matrículas:
+
+```{r, eval = FALSE}
+projecao <- projetar_indicadores_matricula(
+  indicadores_observados = indicadores_observados,
+  populacao = populacao,
+  metas = metas,
+  anos = 2026:2036,
+  ano_base = 2025
+)
+
+head(projecao)
+```
+
+## Validação local
+
+Durante o desenvolvimento, rode os testes:
+
+```{r, eval = FALSE}
+testthat::test_dir("tests/testthat")
+```
+
+Para checar o pacote completo:
+
+```{r, eval = FALSE}
+R CMD check .
+```
