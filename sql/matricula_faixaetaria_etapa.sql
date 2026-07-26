@@ -183,7 +183,7 @@ matriculas_unificadas AS (
 )
 
 SELECT
-  ANO,
+  CAST(ANO AS INTEGER) AS ANO,
   NO_REGIAO_GEOGRAFICA,
   NO_UF,
   ETAPA_ENSINO,

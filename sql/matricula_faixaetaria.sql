@@ -14,7 +14,7 @@ matriculas_longas AS (
 )
 
 SELECT
-  ANO,
+  CAST(ANO AS INTEGER) AS ANO,
   NO_REGIAO_GEOGRAFICA,
   NO_UF,
   CAST(NULL AS VARCHAR) AS ETAPA_ENSINO,
@@ -33,6 +33,10 @@ SELECT
     WHEN regexp_matches(FAIXA_ETARIA_ORIGINAL, '(_15_17|_1517)$') THEN '15 a 17 anos'
     WHEN regexp_matches(FAIXA_ETARIA_ORIGINAL, '(_18_19|_1819)$') THEN '18 a 19 anos'
     WHEN regexp_matches(FAIXA_ETARIA_ORIGINAL, '(_20_24|_2024)$') THEN '20 a 24 anos'
+    WHEN regexp_matches(FAIXA_ETARIA_ORIGINAL, '(_25_29|_2529)$') THEN '25 a 29 anos'
+    WHEN regexp_matches(FAIXA_ETARIA_ORIGINAL, '(_30_34|_3034)$') THEN '30 a 34 anos'
+    WHEN regexp_matches(FAIXA_ETARIA_ORIGINAL, '(_35_39|_3539)$') THEN '35 a 39 anos'
+    WHEN regexp_matches(FAIXA_ETARIA_ORIGINAL, '_40_MAIS$') THEN '40 anos ou mais'
     WHEN regexp_matches(FAIXA_ETARIA_ORIGINAL, '_25_MAIS$') THEN '25 anos ou mais'
   END AS FAIXA_ETARIA,
   CASE
@@ -48,6 +52,10 @@ SELECT
     WHEN regexp_matches(FAIXA_ETARIA_ORIGINAL, '(_15_17|_1517)$') THEN 5
     WHEN regexp_matches(FAIXA_ETARIA_ORIGINAL, '(_18_19|_1819)$') THEN 6
     WHEN regexp_matches(FAIXA_ETARIA_ORIGINAL, '(_20_24|_2024)$') THEN 7
+    WHEN regexp_matches(FAIXA_ETARIA_ORIGINAL, '(_25_29|_2529)$') THEN 8
+    WHEN regexp_matches(FAIXA_ETARIA_ORIGINAL, '(_30_34|_3034)$') THEN 9
+    WHEN regexp_matches(FAIXA_ETARIA_ORIGINAL, '(_35_39|_3539)$') THEN 10
+    WHEN regexp_matches(FAIXA_ETARIA_ORIGINAL, '_40_MAIS$') THEN 11
     WHEN regexp_matches(FAIXA_ETARIA_ORIGINAL, '_25_MAIS$') THEN 8
   END AS ORDEM_FAIXA_ETARIA,
   QT_MAT
