@@ -17,6 +17,24 @@ taxa_liquida_matricula <- function(matriculas_faixa_adequada, populacao_faixa_ad
   matriculas_faixa_adequada / populacao_faixa_adequada * 100
 }
 
+#' Calcular taxa bruta de matricula
+#'
+#' @param matriculas_faixa_etaria Numero de matriculas na faixa etaria.
+#' @param populacao_faixa_etaria Populacao na faixa etaria.
+#'
+#' @return Vetor numerico com a taxa bruta de matricula em percentual.
+#' @export
+taxa_bruta_matricula <- function(matriculas_faixa_etaria, populacao_faixa_etaria) {
+  validar_razao_matricula(
+    numerador = matriculas_faixa_etaria,
+    denominador = populacao_faixa_etaria,
+    nome_numerador = "matriculas_faixa_etaria",
+    nome_denominador = "populacao_faixa_etaria"
+  )
+
+  matriculas_faixa_etaria / populacao_faixa_etaria * 100
+}
+
 #' Calcular percentual de matriculas fora da faixa etaria
 #'
 #' @param matriculas_fora_faixa Numero de matriculas fora da faixa etaria

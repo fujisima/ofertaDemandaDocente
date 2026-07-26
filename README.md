@@ -29,13 +29,14 @@ library(ofertaDemandaDocente)
 
 ## Dados incluídos no pacote
 
-As funções `ler_matricula_faixaetaria()` e
-`ler_projecao_populacional_ibge()` leem, por padrão, snapshots em Parquet
-incluídos no pacote. Assim, depois da instalação, é possível carregar os dados
-sem configurar conexão com o MotherDuck:
+As funções `ler_matricula_faixaetaria()`,
+`ler_matricula_faixaetaria_etapa()` e `ler_projecao_populacional_ibge()` leem,
+por padrão, snapshots em Parquet incluídos no pacote. Assim, depois da
+instalação, é possível carregar os dados sem configurar conexão com o MotherDuck:
 
 ```r
 matriculas <- ler_matricula_faixaetaria()
+matriculas_etapa <- ler_matricula_faixaetaria_etapa()
 populacao <- ler_projecao_populacional_ibge()
 ```
 
@@ -90,6 +91,7 @@ Leia os dados incluídos no pacote:
 
 ```r
 matriculas <- ler_matricula_faixaetaria()
+matriculas_etapa <- ler_matricula_faixaetaria_etapa()
 populacao <- ler_projecao_populacional_ibge()
 ```
 
@@ -97,6 +99,7 @@ Para consultar diretamente o MotherDuck, use `fonte = "motherduck"`:
 
 ```r
 matriculas <- ler_matricula_faixaetaria(fonte = "motherduck")
+matriculas_etapa <- ler_matricula_faixaetaria_etapa(fonte = "motherduck")
 populacao <- ler_projecao_populacional_ibge(fonte = "motherduck")
 ```
 
@@ -104,8 +107,9 @@ Em seguida, calcule os indicadores observados:
 
 ```r
 indicadores_observados <- calcular_indicadores_matricula_observados(
-  matriculas = matriculas,
+  matriculas = matriculas_etapa,
   populacao = populacao,
+  matriculas_faixaetaria = matriculas,
   anos = 2016:2025
 )
 ```
@@ -159,6 +163,7 @@ O script gera:
 
 ```text
 inst/extdata/matricula_faixaetaria.parquet
+inst/extdata/matricula_faixaetaria_etapa.parquet
 inst/extdata/projecao_populacional_ibge.parquet
 ```
 

@@ -7,21 +7,27 @@
 calcular_indicadores_matricula_observados(
   matriculas,
   populacao,
-  anos = 2016:2025
+  anos = 2016:2025,
+  matriculas_faixaetaria = NULL
 )
 }
 \arguments{
-\item{matriculas}{Data frame de matriculas por faixa etaria, como retornado
-por \code{\link[=ler_matricula_faixaetaria]{ler_matricula_faixaetaria()}}.}
+\item{matriculas}{Data frame de matriculas por faixa etaria e etapa, como retornado
+por \code{\link[=ler_matricula_faixaetaria_etapa]{ler_matricula_faixaetaria_etapa()}}.}
 
 \item{populacao}{Data frame de populacao por etapa, como retornado por
 \code{\link[=ler_projecao_populacional_ibge]{ler_projecao_populacional_ibge()}}.}
 
 \item{anos}{Vetor de anos observados a considerar. Por padrao, \code{2016:2025}.}
+
+\item{matriculas_faixaetaria}{Data frame opcional de matriculas por faixa
+etaria, como retornado por \code{\link[=ler_matricula_faixaetaria]{ler_matricula_faixaetaria()}}. Quando informado,
+e usado para calcular a taxa bruta de matricula.}
 }
 \value{
 Data frame com uma linha por UF, etapa de ensino e ano, contendo os
-componentes dos calculos e os indicadores em percentual.
+componentes dos calculos e os indicadores em percentual, incluindo a taxa bruta
+de matricula quando \code{matriculas_faixaetaria} e informado.
 }
 \description{
 Calcular indicadores observados de matricula

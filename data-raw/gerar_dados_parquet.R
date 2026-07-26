@@ -37,6 +37,11 @@ gerar_dados_parquet <- function() {
   )
 
   write_query_parquet(
+    "sql/matricula_faixaetaria_etapa.sql",
+    "matricula_faixaetaria_etapa.parquet"
+  )
+
+  write_query_parquet(
     "sql/projecao_populacional.sql",
     "projecao_populacional_ibge.parquet"
   )

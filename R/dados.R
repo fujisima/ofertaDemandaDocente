@@ -6,7 +6,9 @@
 #'   `fonte = "motherduck"`. Se omitida, uma nova conexao sera aberta e fechada
 #'   automaticamente. Se informada sem `fonte`, a fonte MotherDuck sera usada.
 #'
-#' @return Data frame com matriculas por UF, etapa de ensino, ano e faixa etaria.
+#' @return Data frame com matriculas por UF, ano e faixa etaria. As colunas
+#'   `ETAPA_ENSINO` e `ETAPA_ENSINO_NOME` sao preenchidas com `NA`, pois os
+#'   dados nao possuem recorte por etapa de ensino.
 #' @export
 ler_matricula_faixaetaria <- function(fonte = c("pacote", "motherduck"), con = NULL) {
   if (!missing(fonte) && missing(con) && inherits(fonte, "DBIConnection")) {
@@ -30,6 +32,40 @@ ler_matricula_faixaetaria <- function(fonte = c("pacote", "motherduck"), con = N
   }
 
   motherduck_read_sql(sql_path("matricula_faixaetaria.sql"), con = con)
+}
+
+#' Ler dados de matricula por faixa etaria e etapa de ensino
+#'
+#' @param fonte Fonte dos dados. Use `"pacote"` para ler o snapshot Parquet
+#'   instalado com o pacote ou `"motherduck"` para consultar o MotherDuck.
+#' @param con Conexao opcional com MotherDuck. Usada apenas quando
+#'   `fonte = "motherduck"`. Se omitida, uma nova conexao sera aberta e fechada
+#'   automaticamente. Se informada sem `fonte`, a fonte MotherDuck sera usada.
+#'
+#' @return Data frame com matriculas por UF, etapa de ensino, ano e faixa etaria.
+#' @export
+ler_matricula_faixaetaria_etapa <- function(fonte = c("pacote", "motherduck"), con = NULL) {
+  if (!missing(fonte) && missing(con) && inherits(fonte, "DBIConnection")) {
+    con <- fonte
+    fonte <- "motherduck"
+  }
+
+  if (!missing(con) && missing(fonte)) {
+    fonte <- "motherduck"
+  }
+
+  fonte <- match.arg(fonte)
+
+  if (identical(fonte, "pacote")) {
+    return(read_package_parquet("matricula_faixaetaria_etapa.parquet"))
+  }
+
+  if (is.null(con)) {
+    con <- motherduck_connect()
+    on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  }
+
+  motherduck_read_sql(sql_path("matricula_faixaetaria_etapa.sql"), con = con)
 }
 
 #' Ler dados de projecao populacional do IBGE

@@ -20,14 +20,19 @@ list(
     ler_matricula_faixaetaria()
   ),
   tar_target(
+    matricula_faixaetaria_etapa,
+    ler_matricula_faixaetaria_etapa()
+  ),
+  tar_target(
     projecao_populacional_ibge,
     ler_projecao_populacional_ibge()
   ),
   tar_target(
     indicadores_matricula_observados,
     calcular_indicadores_matricula_observados(
-      matricula_faixaetaria,
-      projecao_populacional_ibge
+      matriculas = matricula_faixaetaria_etapa,
+      populacao = projecao_populacional_ibge,
+      matriculas_faixaetaria = matricula_faixaetaria
     )
   ),
   tar_target(

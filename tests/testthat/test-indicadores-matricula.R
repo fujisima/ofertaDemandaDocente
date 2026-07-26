@@ -7,6 +7,15 @@ test_that("taxa_liquida_matricula calcula indicador percentual", {
   expect_equal(resultado, c(70, 90))
 })
 
+test_that("taxa_bruta_matricula calcula indicador percentual", {
+  resultado <- taxa_bruta_matricula(
+    matriculas_faixa_etaria = c(1200, 350),
+    populacao_faixa_etaria = c(1000, 500)
+  )
+
+  expect_equal(resultado, c(120, 70))
+})
+
 test_that("percentual_matriculas_fora_faixa calcula indicador percentual", {
   resultado <- percentual_matriculas_fora_faixa(
     matriculas_fora_faixa = c(30, 125),
@@ -47,6 +56,12 @@ test_that("indicadores de matricula validam denominadores", {
   expect_error(
     taxa_liquida_matricula(10, 0),
     "`populacao_faixa_adequada` deve ser maior que zero",
+    fixed = TRUE
+  )
+
+  expect_error(
+    taxa_bruta_matricula(10, 0),
+    "`populacao_faixa_etaria` deve ser maior que zero",
     fixed = TRUE
   )
 

@@ -14,13 +14,25 @@ test_that("calcular_indicadores_matricula_observados calcula indicadores por UF,
     ANO = c(2016, 2016, 2025, 2025),
     POPULACAO = c(1000, 300, 900, 250)
   )
+  matriculas_faixaetaria <- data.frame(
+    ANO = c(2016, 2016, 2025, 2025),
+    NO_UF = "Acre",
+    FAIXA_ETARIA = c("0 a 3 anos", "4 a 5 anos", "0 a 3 anos", "4 a 5 anos"),
+    QT_MAT = c(150, 210, 180, 230)
+  )
 
-  resultado <- calcular_indicadores_matricula_observados(matriculas, populacao)
+  resultado <- calcular_indicadores_matricula_observados(
+    matriculas = matriculas,
+    populacao = populacao,
+    matriculas_faixaetaria = matriculas_faixaetaria
+  )
 
   expect_equal(nrow(resultado), 4)
   expect_equal(resultado$ANO, c(2016, 2016, 2025, 2025))
   expect_equal(resultado$MAT_FORA_FAIXA, c(30, 20, 30, 20))
+  expect_equal(resultado$MAT_FAIXA_ETARIA, c(150, 210, 180, 230))
   expect_equal(resultado$TAXA_LIQUIDA_MATRICULA, c(7, 60, 10, 80))
+  expect_equal(resultado$TAXA_BRUTA_MATRICULA, c(15, 70, 20, 92))
   expect_equal(resultado$PERCENTUAL_MATRICULAS_FORA_FAIXA, c(30, 10, 25, 20 / 220 * 100))
 })
 

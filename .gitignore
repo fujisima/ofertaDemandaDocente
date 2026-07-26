@@ -10,3 +10,5 @@ _targets/
 *.tar.gz
 *.Rcheck
 ..Rcheck
+/doc/
+/Meta/
