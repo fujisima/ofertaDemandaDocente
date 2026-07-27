@@ -11,7 +11,9 @@
 #'
 #' @return Data frame com uma linha por UF, etapa de ensino e ano, contendo os
 #'   componentes dos calculos e os indicadores em percentual, incluindo a taxa
-#'   bruta de matricula quando `matriculas_faixaetaria` e informado.
+#'   bruta de matricula quando `matriculas_faixaetaria` e informado. As taxas de
+#'   avancados e defasagem usam a populacao da faixa adequada como denominador;
+#'   `TIPO_CALCULO_*` indica se o numerador e exato, aproximado ou nao aplicavel.
 #' @importFrom stats aggregate
 #' @export
 calcular_indicadores_matricula_observados <- function(
@@ -90,6 +92,10 @@ calcular_indicadores_matricula_observados <- function(
     indicadores = indicadores,
     matriculas_faixaetaria = matriculas_faixaetaria
   )
+  indicadores <- adicionar_indicadores_fluxo_etario(
+    indicadores = indicadores,
+    matriculas = matriculas
+  )
 
   indicadores$MAT_FORA_FAIXA <- indicadores$TOTAL_MATRICULAS - indicadores$MAT_FAIXA_ADEQUADA
   indicadores$TAXA_LIQUIDA_MATRICULA <- taxa_liquida_matricula(
@@ -108,6 +114,18 @@ calcular_indicadores_matricula_observados <- function(
     indicadores$MAT_FORA_FAIXA,
     indicadores$TOTAL_MATRICULAS
   )
+  indicadores$TAXA_AVANCADOS <- taxa_matricula_opcional(
+    indicadores$MAT_AVANCADOS,
+    indicadores$POP_FAIXA_ADEQUADA
+  )
+  indicadores$TAXA_DEFASAGEM_I <- taxa_matricula_opcional(
+    indicadores$MAT_DEFASAGEM_I,
+    indicadores$POP_FAIXA_ADEQUADA
+  )
+  indicadores$TAXA_DEFASAGEM_II <- taxa_matricula_opcional(
+    indicadores$MAT_DEFASAGEM_II,
+    indicadores$POP_FAIXA_ADEQUADA
+  )
 
   indicadores <- indicadores[order(indicadores$ANO, indicadores$NO_UF, indicadores$ETAPA_ENSINO), ]
   row.names(indicadores) <- NULL
@@ -124,7 +142,16 @@ calcular_indicadores_matricula_observados <- function(
     "POP_FAIXA_ADEQUADA",
     "TAXA_LIQUIDA_MATRICULA",
     "TAXA_BRUTA_MATRICULA",
-    "PERCENTUAL_MATRICULAS_FORA_FAIXA"
+    "PERCENTUAL_MATRICULAS_FORA_FAIXA",
+    "MAT_AVANCADOS",
+    "MAT_DEFASAGEM_I",
+    "MAT_DEFASAGEM_II",
+    "TAXA_AVANCADOS",
+    "TAXA_DEFASAGEM_I",
+    "TAXA_DEFASAGEM_II",
+    "TIPO_CALCULO_AVANCADOS",
+    "TIPO_CALCULO_DEFASAGEM_I",
+    "TIPO_CALCULO_DEFASAGEM_II"
   )]
 }
 
@@ -190,6 +217,138 @@ adicionar_matriculas_faixa_etaria <- function(indicadores, matriculas_faixaetari
   }
 
   indicadores
+}
+
+adicionar_indicadores_fluxo_etario <- function(indicadores, matriculas) {
+  mapeamento <- mapeamento_indicadores_fluxo_etario()
+
+  indicadores <- adicionar_matriculas_fluxo_etario(
+    indicadores = indicadores,
+    matriculas = matriculas,
+    mapeamento = mapeamento,
+    indicador = "AVANCADOS"
+  )
+  indicadores <- adicionar_matriculas_fluxo_etario(
+    indicadores = indicadores,
+    matriculas = matriculas,
+    mapeamento = mapeamento,
+    indicador = "DEFASAGEM_I"
+  )
+  indicadores <- adicionar_matriculas_fluxo_etario(
+    indicadores = indicadores,
+    matriculas = matriculas,
+    mapeamento = mapeamento,
+    indicador = "DEFASAGEM_II"
+  )
+
+  indicadores
+}
+
+mapeamento_indicadores_fluxo_etario <- function() {
+  data.frame(
+    INDICADOR = c(
+      rep("AVANCADOS", 4),
+      rep("DEFASAGEM_I", 4),
+      rep("DEFASAGEM_II", 3)
+    ),
+    ETAPA_ENSINO = c(
+      "CRE", "PRE", "AI", "AF",
+      "PRE", "AI", "AF", "EM",
+      "AI", "AF", "EM"
+    ),
+    ETAPA_MATRICULA = c(
+      "PRE", "AI", "AF", "EM",
+      "CRE", "PRE", "AI", "AF",
+      "CRE", "PRE", "AI"
+    ),
+    FAIXA_ETARIA = c(
+      "0 a 3 anos", "0 a 5 anos", "0 a 10 anos", "0 a 14 anos",
+      "4 a 5 anos", "6 anos ou mais", "11 a 14 anos", "15 a 17 anos",
+      "6 anos ou mais", "6 anos ou mais", "15 a 17 anos"
+    ),
+    TIPO_CALCULO = c(
+      "exato", "aproximado", "aproximado", "aproximado",
+      "exato", "aproximado", "exato", "exato",
+      "aproximado", "aproximado", "exato"
+    ),
+    stringsAsFactors = FALSE
+  )
+}
+
+adicionar_matriculas_fluxo_etario <- function(indicadores, matriculas, mapeamento, indicador) {
+  mapeamento <- mapeamento[mapeamento$INDICADOR == indicador, ]
+  col_matriculas <- paste0("MAT_", indicador)
+  col_tipo <- paste0("TIPO_CALCULO_", indicador)
+
+  indicadores[[col_matriculas]] <- NA_real_
+  indicadores[[col_tipo]] <- "nao_aplicavel"
+
+  for (i in seq_len(nrow(mapeamento))) {
+    etapa_ensino <- mapeamento$ETAPA_ENSINO[i]
+    etapa_matricula <- mapeamento$ETAPA_MATRICULA[i]
+    faixa_etaria <- mapeamento$FAIXA_ETARIA[i]
+    linhas <- indicadores$ETAPA_ENSINO == etapa_ensino
+
+    if (!any(linhas)) {
+      next
+    }
+
+    matriculas_indicador <- matriculas[
+      matriculas$ETAPA_ENSINO == etapa_matricula &
+        matriculas$FAIXA_ETARIA == faixa_etaria,
+      c("NO_UF", "ANO", "QT_MAT")
+    ]
+
+    if (nrow(matriculas_indicador) == 0) {
+      stop(
+        sprintf(
+          "Nao ha matriculas para calcular `%s` de `%s` com `%s` em `%s`.",
+          col_matriculas,
+          etapa_ensino,
+          faixa_etaria,
+          etapa_matricula
+        ),
+        call. = FALSE
+      )
+    }
+
+    matriculas_indicador <- aggregate(
+      QT_MAT ~ NO_UF + ANO,
+      data = matriculas_indicador,
+      FUN = sum,
+      na.rm = TRUE
+    )
+
+    chaves_indicadores <- paste(indicadores$NO_UF[linhas], indicadores$ANO[linhas], sep = "\r")
+    chaves_matriculas <- paste(matriculas_indicador$NO_UF, matriculas_indicador$ANO, sep = "\r")
+    posicoes <- match(chaves_indicadores, chaves_matriculas)
+
+    if (anyNA(posicoes)) {
+      stop(
+        sprintf("Ha combinacoes de UF e ano sem matriculas para calcular `%s`.", col_matriculas),
+        call. = FALSE
+      )
+    }
+
+    indicadores[[col_matriculas]][linhas] <- matriculas_indicador$QT_MAT[posicoes]
+    indicadores[[col_tipo]][linhas] <- mapeamento$TIPO_CALCULO[i]
+  }
+
+  indicadores
+}
+
+taxa_matricula_opcional <- function(matriculas, populacao) {
+  resultado <- rep(NA_real_, length(matriculas))
+  presentes <- !is.na(matriculas)
+
+  if (any(presentes)) {
+    resultado[presentes] <- taxa_liquida_matricula(
+      matriculas[presentes],
+      populacao[presentes]
+    )
+  }
+
+  resultado
 }
 
 validar_colunas <- function(dados, colunas, nome) {
