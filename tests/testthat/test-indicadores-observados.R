@@ -61,8 +61,9 @@ test_that("calcular_indicadores_matricula_observados calcula indicadores por UF,
   expect_equal(resultado$ETAPA_ENSINO, rep(c("AF", "AI", "CRE", "EM", "PRE"), times = 2))
   expect_equal(resultado$MAT_FORA_FAIXA, c(70, 50, 30, 70, 20, 80, 50, 30, 80, 20))
   expect_equal(resultado$MAT_FAIXA_ETARIA, c(360, 260, 150, 450, 210, 380, 280, 180, 480, 230))
+  expect_equal(resultado$MAT_TAXA_BRUTA_MATRICULA, c(381, 279, 75, 437, 200, 404, 302, 96, 469, 223))
   expect_equal(resultado$TAXA_LIQUIDA_MATRICULA, c(55, 50, 7, 430 / 7, 60, 350 / 5.5, 60, 10, 460 / 6.5, 80))
-  expect_equal(resultado$TAXA_BRUTA_MATRICULA, c(60, 52, 15, 450 / 7, 70, 380 / 5.5, 280 / 4.5, 20, 480 / 6.5, 92))
+  expect_equal(resultado$TAXA_BRUTA_MATRICULA, c(381 / 6, 279 / 5, 7.5, 437 / 7, 200 / 3, 404 / 5.5, 302 / 4.5, 96 / 9, 469 / 6.5, 89.2))
   expect_equal(resultado$PERCENTUAL_MATRICULAS_FORA_FAIXA, c(17.5, 50 / 300 * 100, 30, 14, 10, 80 / 430 * 100, 50 / 320 * 100, 25, 80 / 540 * 100, 20 / 220 * 100))
   expect_equal(resultado$MAT_AVANCADOS, c(30, 20, 5, NA, 12, 31, 21, 6, NA, 13))
   expect_equal(resultado$MAT_DEFASAGEM_I, c(14, 7, NA, 4, 8, 15, 8, NA, 5, 10))
@@ -73,6 +74,16 @@ test_that("calcular_indicadores_matricula_observados calcula indicadores por UF,
   expect_equal(resultado$TIPO_CALCULO_AVANCADOS, c("aproximado", "aproximado", "exato", "nao_aplicavel", "aproximado", "aproximado", "aproximado", "exato", "nao_aplicavel", "aproximado"))
   expect_equal(resultado$TIPO_CALCULO_DEFASAGEM_I, c("exato", "aproximado", "nao_aplicavel", "exato", "exato", "exato", "aproximado", "nao_aplicavel", "exato", "exato"))
   expect_equal(resultado$TIPO_CALCULO_DEFASAGEM_II, c("aproximado", "aproximado", "nao_aplicavel", "exato", "nao_aplicavel", "aproximado", "aproximado", "nao_aplicavel", "exato", "nao_aplicavel"))
+  expect_equal(
+    resultado$TAXA_BRUTA_MATRICULA - resultado$TAXA_LIQUIDA_MATRICULA,
+    rowSums(
+      data.frame(
+        avancados = ifelse(is.na(resultado$TAXA_AVANCADOS), 0, resultado$TAXA_AVANCADOS),
+        defasagem_i = ifelse(is.na(resultado$TAXA_DEFASAGEM_I), 0, resultado$TAXA_DEFASAGEM_I),
+        defasagem_ii = ifelse(is.na(resultado$TAXA_DEFASAGEM_II), 0, resultado$TAXA_DEFASAGEM_II)
+      )
+    )
+  )
 })
 
 test_that("calcular_indicadores_matricula_observados valida populacao faltante", {

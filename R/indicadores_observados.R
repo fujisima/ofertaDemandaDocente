@@ -7,12 +7,14 @@
 #' @param anos Vetor de anos observados a considerar. Por padrao, `2016:2025`.
 #' @param matriculas_faixaetaria Data frame opcional de matriculas por faixa
 #'   etaria, como retornado por [ler_matricula_faixaetaria()]. Quando informado,
-#'   e usado para calcular a taxa bruta de matricula.
+#'   e incluido como total amplo por faixa etaria.
 #'
 #' @return Data frame com uma linha por UF, etapa de ensino e ano, contendo os
-#'   componentes dos calculos e os indicadores em percentual, incluindo a taxa
-#'   bruta de matricula quando `matriculas_faixaetaria` e informado. As taxas de
-#'   avancados e defasagem usam a populacao da faixa adequada como denominador;
+#'   componentes dos calculos e os indicadores em percentual. A taxa bruta de
+#'   matricula usa como numerador a soma das matriculas na faixa adequada,
+#'   avancados, defasagem I e defasagem II; `MAT_FAIXA_ETARIA` mantem o total
+#'   amplo por faixa etaria quando `matriculas_faixaetaria` e informado. As
+#'   taxas de avancados e defasagem usam a populacao da faixa adequada como denominador;
 #'   `TIPO_CALCULO_*` indica se o numerador e exato, aproximado ou nao aplicavel.
 #' @importFrom stats aggregate
 #' @export
@@ -102,14 +104,11 @@ calcular_indicadores_matricula_observados <- function(
     indicadores$MAT_FAIXA_ADEQUADA,
     indicadores$POP_FAIXA_ADEQUADA
   )
-  if (all(is.na(indicadores$MAT_FAIXA_ETARIA))) {
-    indicadores$TAXA_BRUTA_MATRICULA <- NA_real_
-  } else {
-    indicadores$TAXA_BRUTA_MATRICULA <- taxa_bruta_matricula(
-      indicadores$MAT_FAIXA_ETARIA,
-      indicadores$POP_FAIXA_ADEQUADA
-    )
-  }
+  indicadores$MAT_TAXA_BRUTA_MATRICULA <- numerador_taxa_bruta_matricula(indicadores)
+  indicadores$TAXA_BRUTA_MATRICULA <- taxa_bruta_matricula(
+    indicadores$MAT_TAXA_BRUTA_MATRICULA,
+    indicadores$POP_FAIXA_ADEQUADA
+  )
   indicadores$PERCENTUAL_MATRICULAS_FORA_FAIXA <- percentual_matriculas_fora_faixa(
     indicadores$MAT_FORA_FAIXA,
     indicadores$TOTAL_MATRICULAS
@@ -139,6 +138,7 @@ calcular_indicadores_matricula_observados <- function(
     "MAT_FAIXA_ADEQUADA",
     "MAT_FORA_FAIXA",
     "MAT_FAIXA_ETARIA",
+    "MAT_TAXA_BRUTA_MATRICULA",
     "POP_FAIXA_ADEQUADA",
     "TAXA_LIQUIDA_MATRICULA",
     "TAXA_BRUTA_MATRICULA",
@@ -181,6 +181,18 @@ etapa_ensino_faixa_etaria <- function(faixa_etaria) {
   resultado[faixa_etaria == "11 a 14 anos"] <- "AF"
   resultado[faixa_etaria == "15 a 17 anos"] <- "EM"
   resultado
+}
+
+numerador_taxa_bruta_matricula <- function(indicadores) {
+  componentes <- indicadores[, c(
+    "MAT_FAIXA_ADEQUADA",
+    "MAT_AVANCADOS",
+    "MAT_DEFASAGEM_I",
+    "MAT_DEFASAGEM_II"
+  )]
+
+  componentes[is.na(componentes)] <- 0
+  rowSums(componentes)
 }
 
 adicionar_matriculas_faixa_etaria <- function(indicadores, matriculas_faixaetaria) {

@@ -22,12 +22,16 @@ por \code{\link[=ler_matricula_faixaetaria_etapa]{ler_matricula_faixaetaria_etap
 
 \item{matriculas_faixaetaria}{Data frame opcional de matriculas por faixa
 etaria, como retornado por \code{\link[=ler_matricula_faixaetaria]{ler_matricula_faixaetaria()}}. Quando informado,
-e usado para calcular a taxa bruta de matricula.}
+e incluido como total amplo por faixa etaria.}
 }
 \value{
 Data frame com uma linha por UF, etapa de ensino e ano, contendo os
-componentes dos calculos e os indicadores em percentual, incluindo a taxa bruta
-de matricula quando \code{matriculas_faixaetaria} e informado.
+componentes dos calculos e os indicadores em percentual. A taxa bruta de
+matricula usa como numerador a soma das matriculas na faixa adequada,
+avancados, defasagem I e defasagem II; \code{MAT_FAIXA_ETARIA} mantem o total
+amplo por faixa etaria quando \code{matriculas_faixaetaria} e informado. As
+taxas de avancados e defasagem usam a populacao da faixa adequada como denominador;
+\code{TIPO_CALCULO_*} indica se o numerador e exato, aproximado ou nao aplicavel.
 }
 \description{
 Calcular indicadores observados de matricula

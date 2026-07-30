@@ -8,6 +8,7 @@ Maintainer: Leonardo Yada <leonardo@fujisimaanalytics.com>
 Description: Este pacote permite estimar a demanda e oferta de docentes no Brasil por UF.
 License: MIT + file LICENSE
 Encoding: UTF-8
+LazyData: true
 Imports:
     DBI,
     duckdb
