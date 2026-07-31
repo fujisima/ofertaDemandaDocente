@@ -76,7 +76,7 @@ ler_matricula_faixaetaria_etapa <- function(fonte = c("pacote", "motherduck"), c
 #'   `fonte = "motherduck"`. Se omitida, uma nova conexao sera aberta e fechada
 #'   automaticamente. Se informada sem `fonte`, a fonte MotherDuck sera usada.
 #'
-#' @return Data frame com populacao projetada por UF, etapa de ensino e ano.
+#' @return Data frame com populacao projetada por UF, faixa escolar esperada e ano.
 #' @export
 ler_projecao_populacional_ibge <- function(fonte = c("pacote", "motherduck"), con = NULL) {
   if (!missing(fonte) && missing(con) && inherits(fonte, "DBIConnection")) {

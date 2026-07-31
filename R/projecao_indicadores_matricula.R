@@ -21,6 +21,8 @@ projetar_indicadores_matricula <- function(
   ano_base = 2025,
   lim = 100
 ) {
+  indicadores_observados <- normalizar_indicadores_observados_projecao(indicadores_observados)
+
   validar_colunas(
     indicadores_observados,
     c(
@@ -46,6 +48,10 @@ projetar_indicadores_matricula <- function(
   )
 
   indicadores_base <- indicadores_observados[indicadores_observados$ANO == ano_base, ]
+  indicadores_base <- indicadores_base[
+    !is.na(indicadores_base$TAXA_LIQUIDA_MATRICULA) &
+      !is.na(indicadores_base$PERCENTUAL_MATRICULAS_FORA_FAIXA),
+  ]
 
   if (nrow(indicadores_base) == 0) {
     stop(sprintf("Nao ha indicadores observados para `ano_base = %s`.", ano_base), call. = FALSE)
@@ -112,6 +118,22 @@ projetar_indicadores_matricula <- function(
     "PERCENTUAL_MATRICULAS_FORA_FAIXA",
     "TIPO_DADO"
   )]
+}
+
+normalizar_indicadores_observados_projecao <- function(indicadores_observados) {
+  if (!"ETAPA_ENSINO_ADEQUADA" %in% names(indicadores_observados)) {
+    return(indicadores_observados)
+  }
+
+  validar_colunas(
+    indicadores_observados,
+    c("ETAPA_ENSINO_ADEQUADA", "ETAPA_ENSINO_ADEQUADA_NOME"),
+    "indicadores_observados"
+  )
+
+  indicadores_observados$ETAPA_ENSINO <- indicadores_observados$ETAPA_ENSINO_ADEQUADA
+  indicadores_observados$ETAPA_ENSINO_NOME <- indicadores_observados$ETAPA_ENSINO_ADEQUADA_NOME
+  indicadores_observados
 }
 
 resolver_metas_indicadores <- function(indicadores_base, metas) {

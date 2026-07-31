@@ -1,4 +1,4 @@
-test_that("calcular_indicadores_matricula_observados calcula indicadores por UF, etapa e ano", {
+test_that("calcular_indicadores_matricula_observados calcula indicadores por UF, faixa etaria e ano", {
   matriculas <- data.frame(
     ANO = rep(c(2016, 2025), each = 24),
     NO_UF = "Acre",
@@ -58,22 +58,23 @@ test_that("calcular_indicadores_matricula_observados calcula indicadores por UF,
 
   expect_equal(nrow(resultado), 10)
   expect_equal(resultado$ANO, rep(c(2016, 2025), each = 5))
-  expect_equal(resultado$ETAPA_ENSINO, rep(c("AF", "AI", "CRE", "EM", "PRE"), times = 2))
-  expect_equal(resultado$MAT_FORA_FAIXA, c(70, 50, 30, 70, 20, 80, 50, 30, 80, 20))
-  expect_equal(resultado$MAT_FAIXA_ETARIA, c(360, 260, 150, 450, 210, 380, 280, 180, 480, 230))
-  expect_equal(resultado$MAT_TAXA_BRUTA_MATRICULA, c(381, 279, 75, 437, 200, 404, 302, 96, 469, 223))
-  expect_equal(resultado$TAXA_LIQUIDA_MATRICULA, c(55, 50, 7, 430 / 7, 60, 350 / 5.5, 60, 10, 460 / 6.5, 80))
-  expect_equal(resultado$TAXA_BRUTA_MATRICULA, c(381 / 6, 279 / 5, 7.5, 437 / 7, 200 / 3, 404 / 5.5, 302 / 4.5, 96 / 9, 469 / 6.5, 89.2))
-  expect_equal(resultado$PERCENTUAL_MATRICULAS_FORA_FAIXA, c(17.5, 50 / 300 * 100, 30, 14, 10, 80 / 430 * 100, 50 / 320 * 100, 25, 80 / 540 * 100, 20 / 220 * 100))
-  expect_equal(resultado$MAT_AVANCADOS, c(30, 20, 5, NA, 12, 31, 21, 6, NA, 13))
-  expect_equal(resultado$MAT_DEFASAGEM_I, c(14, 7, NA, 4, 8, 15, 8, NA, 5, 10))
-  expect_equal(resultado$MAT_DEFASAGEM_II, c(7, 2, NA, 3, NA, 8, 3, NA, 4, NA))
-  expect_equal(resultado$TAXA_AVANCADOS, c(30 / 600, 20 / 500, 5 / 1000, NA, 12 / 300, 31 / 550, 21 / 450, 6 / 900, NA, 13 / 250) * 100)
-  expect_equal(resultado$TAXA_DEFASAGEM_I, c(14 / 600, 7 / 500, NA, 4 / 700, 8 / 300, 15 / 550, 8 / 450, NA, 5 / 650, 10 / 250) * 100)
-  expect_equal(resultado$TAXA_DEFASAGEM_II, c(7 / 600, 2 / 500, NA, 3 / 700, NA, 8 / 550, 3 / 450, NA, 4 / 650, NA) * 100)
-  expect_equal(resultado$TIPO_CALCULO_AVANCADOS, c("aproximado", "aproximado", "exato", "nao_aplicavel", "aproximado", "aproximado", "aproximado", "exato", "nao_aplicavel", "aproximado"))
-  expect_equal(resultado$TIPO_CALCULO_DEFASAGEM_I, c("exato", "aproximado", "nao_aplicavel", "exato", "exato", "exato", "aproximado", "nao_aplicavel", "exato", "exato"))
-  expect_equal(resultado$TIPO_CALCULO_DEFASAGEM_II, c("aproximado", "aproximado", "nao_aplicavel", "exato", "nao_aplicavel", "aproximado", "aproximado", "nao_aplicavel", "exato", "nao_aplicavel"))
+  expect_equal(resultado$FAIXA_ETARIA, rep(c("0 a 3 anos", "4 a 5 anos", "6 a 10 anos", "11 a 14 anos", "15 a 17 anos"), times = 2))
+  expect_equal(resultado$ETAPA_ENSINO_ADEQUADA, rep(c("CRE", "PRE", "AI", "AF", "EM"), times = 2))
+  expect_equal(resultado$MAT_FORA_FAIXA, c(30, 20, 50, 70, 70, 30, 20, 50, 80, 80))
+  expect_equal(resultado$MAT_FAIXA_ETARIA, c(150, 210, 260, 360, 450, 180, 230, 280, 380, 480))
+  expect_equal(resultado$MAT_TAXA_BRUTA_MATRICULA, c(75, 200, 279, 374, 437, 96, 223, 302, 396, 469))
+  expect_equal(resultado$TAXA_LIQUIDA_MATRICULA, c(7, 60, 50, 55, 430 / 7, 10, 80, 60, 350 / 5.5, 460 / 6.5))
+  expect_equal(resultado$TAXA_BRUTA_MATRICULA, c(7.5, 200 / 3, 279 / 5, 374 / 6, 437 / 7, 96 / 9, 89.2, 302 / 4.5, 396 / 5.5, 469 / 6.5))
+  expect_equal(resultado$PERCENTUAL_MATRICULAS_FORA_FAIXA, c(30, 10, 50 / 300 * 100, 17.5, 14, 25, 20 / 220 * 100, 50 / 320 * 100, 80 / 430 * 100, 80 / 540 * 100))
+  expect_equal(resultado$MAT_AVANCADOS, c(5, 12, 20, 30, NA, 6, 13, 21, 31, NA))
+  expect_equal(resultado$MAT_DEFASAGEM_I, c(NA, 8, 7, 14, 4, NA, 10, 8, 15, 5))
+  expect_equal(resultado$MAT_DEFASAGEM_II, c(NA, NA, 2, NA, 3, NA, NA, 3, NA, 4))
+  expect_equal(resultado$TAXA_AVANCADOS, c(5 / 1000, 12 / 300, 20 / 500, 30 / 600, NA, 6 / 900, 13 / 250, 21 / 450, 31 / 550, NA) * 100)
+  expect_equal(resultado$TAXA_DEFASAGEM_I, c(NA, 8 / 300, 7 / 500, 14 / 600, 4 / 700, NA, 10 / 250, 8 / 450, 15 / 550, 5 / 650) * 100)
+  expect_equal(resultado$TAXA_DEFASAGEM_II, c(NA, NA, 2 / 500, NA, 3 / 700, NA, NA, 3 / 450, NA, 4 / 650) * 100)
+  expect_equal(resultado$TIPO_CALCULO_AVANCADOS, c("exato", "aproximado", "aproximado", "aproximado", "nao_aplicavel", "exato", "aproximado", "aproximado", "aproximado", "nao_aplicavel"))
+  expect_equal(resultado$TIPO_CALCULO_DEFASAGEM_I, c("nao_aplicavel", "exato", "aproximado", "exato", "exato", "nao_aplicavel", "exato", "aproximado", "exato", "exato"))
+  expect_equal(resultado$TIPO_CALCULO_DEFASAGEM_II, c("nao_aplicavel", "nao_aplicavel", "aproximado", "nao_aplicavel", "exato", "nao_aplicavel", "nao_aplicavel", "aproximado", "nao_aplicavel", "exato"))
   expect_equal(
     resultado$TAXA_BRUTA_MATRICULA - resultado$TAXA_LIQUIDA_MATRICULA,
     rowSums(
@@ -107,5 +108,45 @@ test_that("calcular_indicadores_matricula_observados valida populacao faltante",
     calcular_indicadores_matricula_observados(matriculas, populacao),
     "Ha combinacoes de UF, etapa e ano sem populacao correspondente",
     fixed = TRUE
+  )
+})
+
+test_that("mapeamento de fluxo etario evita dupla contagem em defasagem II", {
+  mapeamento <- mapeamento_indicadores_fluxo_etario()
+
+  expect_false(any(
+    mapeamento$INDICADOR == "DEFASAGEM_II" &
+      mapeamento$ETAPA_ENSINO_ADEQUADA == "AF"
+  ))
+
+  defasagem_ii_ai <- mapeamento[
+    mapeamento$INDICADOR == "DEFASAGEM_II" &
+      mapeamento$ETAPA_ENSINO_ADEQUADA == "AI",
+    c("ETAPA_MATRICULA", "FAIXA_ETARIA", "TIPO_CALCULO")
+  ]
+  row.names(defasagem_ii_ai) <- NULL
+  expect_equal(
+    defasagem_ii_ai,
+    data.frame(
+      ETAPA_MATRICULA = "CRE",
+      FAIXA_ETARIA = "6 anos ou mais",
+      TIPO_CALCULO = "aproximado",
+      stringsAsFactors = FALSE
+    )
+  )
+  defasagem_pos_em <- mapeamento[
+    mapeamento$ETAPA_ENSINO_ADEQUADA == "POS_EM",
+    c("INDICADOR", "ETAPA_MATRICULA", "FAIXA_ETARIA", "TIPO_CALCULO")
+  ]
+  row.names(defasagem_pos_em) <- NULL
+  expect_equal(
+    defasagem_pos_em,
+    data.frame(
+      INDICADOR = c("DEFASAGEM_I", "DEFASAGEM_II"),
+      ETAPA_MATRICULA = c("EM", "AF"),
+      FAIXA_ETARIA = c("18 a 19 anos", "18 a 19 anos"),
+      TIPO_CALCULO = c("exato", "exato"),
+      stringsAsFactors = FALSE
+    )
   )
 })

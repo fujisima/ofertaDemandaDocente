@@ -145,7 +145,7 @@ indicadores_observados <- calcular_indicadores_matricula_observados(
 ```
 
 Defina metas gerais por etapa de ensino. Os nomes dos vetores devem corresponder
-aos valores de `ETAPA_ENSINO` usados nos dados:
+aos valores de `ETAPA_ENSINO_ADEQUADA` usados nos indicadores observados:
 
 ```{r}
 metas <- criar_metas_indicadores_gerais(

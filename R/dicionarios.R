@@ -3,7 +3,7 @@
 #' Dicionario das variaveis retornadas por
 #' [calcular_indicadores_matricula_observados()].
 #'
-#' @format Um data frame com 23 linhas e 6 colunas:
+#' @format Um data frame com 24 linhas e 6 colunas:
 #' \describe{
 #'   \item{variavel}{Nome da variavel.}
 #'   \item{descricao}{Descricao curta da variavel.}

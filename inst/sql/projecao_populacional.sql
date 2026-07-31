@@ -9,6 +9,7 @@ WITH populacao_por_etapa AS (
       WHEN IDADE BETWEEN 6 AND 10 THEN 'AI'
       WHEN IDADE BETWEEN 11 AND 14 THEN 'AF'
       WHEN IDADE BETWEEN 15 AND 17 THEN 'EM'
+      WHEN IDADE BETWEEN 18 AND 19 THEN 'POS_EM'
       ELSE 'OUTROS'
     END AS ETAPA_ENSINO,
     SUM("2000") AS "2000",
@@ -198,6 +199,7 @@ SELECT
     WHEN 'AI' THEN 'Anos iniciais'
     WHEN 'AF' THEN 'Anos finais'
     WHEN 'EM' THEN 'Ensino medio'
+    WHEN 'POS_EM' THEN 'Pos-ensino medio'
   END AS ETAPA_ENSINO_NOME,
   ANO,
   POPULACAO

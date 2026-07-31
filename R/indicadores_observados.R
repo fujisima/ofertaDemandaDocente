@@ -9,13 +9,15 @@
 #'   etaria, como retornado por [ler_matricula_faixaetaria()]. Quando informado,
 #'   e incluido como total amplo por faixa etaria.
 #'
-#' @return Data frame com uma linha por UF, etapa de ensino e ano, contendo os
-#'   componentes dos calculos e os indicadores em percentual. A taxa bruta de
-#'   matricula usa como numerador a soma das matriculas na faixa adequada,
-#'   avancados, defasagem I e defasagem II; `MAT_FAIXA_ETARIA` mantem o total
-#'   amplo por faixa etaria quando `matriculas_faixaetaria` e informado. As
-#'   taxas de avancados e defasagem usam a populacao da faixa adequada como denominador;
-#'   `TIPO_CALCULO_*` indica se o numerador e exato, aproximado ou nao aplicavel.
+#' @return Data frame com uma linha por UF, faixa etaria e ano, contendo os
+#'   componentes dos calculos e os indicadores em percentual. A coluna
+#'   `ETAPA_ENSINO_ADEQUADA` identifica a etapa esperada para a faixa etaria,
+#'   quando aplicavel. A taxa bruta de matricula usa como numerador a soma das
+#'   matriculas na faixa adequada, avancados, defasagem I e defasagem II;
+#'   `MAT_FAIXA_ETARIA` mantem o total amplo por faixa etaria quando
+#'   `matriculas_faixaetaria` e informado. As taxas de avancados e defasagem
+#'   usam a populacao da faixa etaria como denominador; `TIPO_CALCULO_*` indica
+#'   se o numerador e exato, aproximado ou nao aplicavel.
 #' @importFrom stats aggregate
 #' @export
 calcular_indicadores_matricula_observados <- function(
@@ -53,38 +55,69 @@ calcular_indicadores_matricula_observados <- function(
     faixa_etaria = matriculas$FAIXA_ETARIA
   )
 
-  chaves_matricula <- c("NO_UF", "ETAPA_ENSINO", "ETAPA_ENSINO_NOME", "ANO")
+  mapeamento_faixas <- mapeamento_faixas_etarias_indicadores()
+  chaves_etapa <- c("NO_UF", "ETAPA_ENSINO_ADEQUADA", "ANO")
 
   total_matriculas <- aggregate(
-    QT_MAT ~ NO_UF + ETAPA_ENSINO + ETAPA_ENSINO_NOME + ANO,
+    QT_MAT ~ NO_UF + ETAPA_ENSINO + ANO,
     data = matriculas[matriculas$FAIXA_ETARIA == "Total", ],
     FUN = sum,
     na.rm = TRUE
   )
+  names(total_matriculas)[names(total_matriculas) == "ETAPA_ENSINO"] <- "ETAPA_ENSINO_ADEQUADA"
   names(total_matriculas)[names(total_matriculas) == "QT_MAT"] <- "TOTAL_MATRICULAS"
 
   matriculas_faixa_adequada <- aggregate(
-    QT_MAT ~ NO_UF + ETAPA_ENSINO + ETAPA_ENSINO_NOME + ANO,
+    QT_MAT ~ NO_UF + ETAPA_ENSINO + ANO,
     data = matriculas[matriculas$FAIXA_ADEQUADA, ],
     FUN = sum,
     na.rm = TRUE
   )
+  names(matriculas_faixa_adequada)[names(matriculas_faixa_adequada) == "ETAPA_ENSINO"] <- "ETAPA_ENSINO_ADEQUADA"
   names(matriculas_faixa_adequada)[names(matriculas_faixa_adequada) == "QT_MAT"] <- "MAT_FAIXA_ADEQUADA"
 
-  indicadores <- merge(
-    total_matriculas,
-    matriculas_faixa_adequada,
-    by = chaves_matricula,
-    all.x = TRUE
+  populacao_faixa_adequada <- populacao[, c("SIGLA", "LOCAL", "ETAPA_ENSINO", "ANO", "POPULACAO")]
+  names(populacao_faixa_adequada) <- c(
+    "SIGLA_UF",
+    "NO_UF",
+    "ETAPA_ENSINO_ADEQUADA",
+    "ANO",
+    "POP_FAIXA_ADEQUADA"
+  )
+  populacao_faixa_adequada <- merge(
+    populacao_faixa_adequada,
+    mapeamento_faixas,
+    by = "ETAPA_ENSINO_ADEQUADA",
+    all.x = FALSE
   )
 
-  populacao_faixa_adequada <- populacao[, c("SIGLA", "LOCAL", "ETAPA_ENSINO", "ANO", "POPULACAO")]
-  names(populacao_faixa_adequada) <- c("SIGLA_UF", "NO_UF", "ETAPA_ENSINO", "ANO", "POP_FAIXA_ADEQUADA")
+  chaves_total_matriculas <- paste(
+    total_matriculas$NO_UF,
+    total_matriculas$ETAPA_ENSINO_ADEQUADA,
+    total_matriculas$ANO,
+    sep = "\r"
+  )
+  chaves_populacao <- paste(
+    populacao_faixa_adequada$NO_UF,
+    populacao_faixa_adequada$ETAPA_ENSINO_ADEQUADA,
+    populacao_faixa_adequada$ANO,
+    sep = "\r"
+  )
+
+  if (any(!chaves_total_matriculas %in% chaves_populacao)) {
+    stop("Ha combinacoes de UF, etapa e ano sem populacao correspondente.", call. = FALSE)
+  }
 
   indicadores <- merge(
-    indicadores,
     populacao_faixa_adequada,
-    by = c("NO_UF", "ETAPA_ENSINO", "ANO"),
+    total_matriculas,
+    by = chaves_etapa,
+    all.x = TRUE
+  )
+  indicadores <- merge(
+    indicadores,
+    matriculas_faixa_adequada,
+    by = chaves_etapa,
     all.x = TRUE
   )
 
@@ -100,7 +133,7 @@ calcular_indicadores_matricula_observados <- function(
   )
 
   indicadores$MAT_FORA_FAIXA <- indicadores$TOTAL_MATRICULAS - indicadores$MAT_FAIXA_ADEQUADA
-  indicadores$TAXA_LIQUIDA_MATRICULA <- taxa_liquida_matricula(
+  indicadores$TAXA_LIQUIDA_MATRICULA <- taxa_matricula_opcional(
     indicadores$MAT_FAIXA_ADEQUADA,
     indicadores$POP_FAIXA_ADEQUADA
   )
@@ -109,7 +142,7 @@ calcular_indicadores_matricula_observados <- function(
     indicadores$MAT_TAXA_BRUTA_MATRICULA,
     indicadores$POP_FAIXA_ADEQUADA
   )
-  indicadores$PERCENTUAL_MATRICULAS_FORA_FAIXA <- percentual_matriculas_fora_faixa(
+  indicadores$PERCENTUAL_MATRICULAS_FORA_FAIXA <- percentual_matriculas_fora_faixa_opcional(
     indicadores$MAT_FORA_FAIXA,
     indicadores$TOTAL_MATRICULAS
   )
@@ -126,14 +159,15 @@ calcular_indicadores_matricula_observados <- function(
     indicadores$POP_FAIXA_ADEQUADA
   )
 
-  indicadores <- indicadores[order(indicadores$ANO, indicadores$NO_UF, indicadores$ETAPA_ENSINO), ]
+  indicadores <- indicadores[order(indicadores$ANO, indicadores$NO_UF, indicadores$ORDEM_FAIXA_ETARIA), ]
   row.names(indicadores) <- NULL
   indicadores[, c(
     "ANO",
     "SIGLA_UF",
     "NO_UF",
-    "ETAPA_ENSINO",
-    "ETAPA_ENSINO_NOME",
+    "FAIXA_ETARIA",
+    "ETAPA_ENSINO_ADEQUADA",
+    "ETAPA_ENSINO_ADEQUADA_NOME",
     "TOTAL_MATRICULAS",
     "MAT_FAIXA_ADEQUADA",
     "MAT_FORA_FAIXA",
@@ -183,6 +217,30 @@ etapa_ensino_faixa_etaria <- function(faixa_etaria) {
   resultado
 }
 
+mapeamento_faixas_etarias_indicadores <- function() {
+  data.frame(
+    FAIXA_ETARIA = c(
+      "0 a 3 anos",
+      "4 a 5 anos",
+      "6 a 10 anos",
+      "11 a 14 anos",
+      "15 a 17 anos",
+      "18 a 19 anos"
+    ),
+    ETAPA_ENSINO_ADEQUADA = c("CRE", "PRE", "AI", "AF", "EM", "POS_EM"),
+    ETAPA_ENSINO_ADEQUADA_NOME = c(
+      "Creche",
+      "Pre-escola",
+      "Anos iniciais",
+      "Anos finais",
+      "Ensino medio",
+      "Pos-ensino medio"
+    ),
+    ORDEM_FAIXA_ETARIA = seq_len(6),
+    stringsAsFactors = FALSE
+  )
+}
+
 numerador_taxa_bruta_matricula <- function(indicadores) {
   componentes <- indicadores[, c(
     "MAT_FAIXA_ADEQUADA",
@@ -197,20 +255,17 @@ numerador_taxa_bruta_matricula <- function(indicadores) {
 
 adicionar_matriculas_faixa_etaria <- function(indicadores, matriculas_faixaetaria) {
   if (is.null(matriculas_faixaetaria)) {
-    indicadores$MAT_FAIXA_ETARIA <- NA_real_
+    indicadores$MAT_FAIXA_ETARIA <- rep(NA_real_, nrow(indicadores))
     return(indicadores)
   }
 
-  faixas_etapa <- faixa_etaria_etapa(indicadores$ETAPA_ENSINO)
+  faixas_etapa <- indicadores$FAIXA_ETARIA
   matriculas_faixaetaria <- matriculas_faixaetaria[
     matriculas_faixaetaria$FAIXA_ETARIA %in% faixas_etapa,
   ]
-  matriculas_faixaetaria$ETAPA_ENSINO <- etapa_ensino_faixa_etaria(
-    matriculas_faixaetaria$FAIXA_ETARIA
-  )
 
   matriculas_faixaetaria <- aggregate(
-    QT_MAT ~ NO_UF + ETAPA_ENSINO + ANO,
+    QT_MAT ~ NO_UF + FAIXA_ETARIA + ANO,
     data = matriculas_faixaetaria,
     FUN = sum,
     na.rm = TRUE
@@ -220,7 +275,7 @@ adicionar_matriculas_faixa_etaria <- function(indicadores, matriculas_faixaetari
   indicadores <- merge(
     indicadores,
     matriculas_faixaetaria,
-    by = c("NO_UF", "ETAPA_ENSINO", "ANO"),
+    by = c("NO_UF", "FAIXA_ETARIA", "ANO"),
     all.x = TRUE
   )
 
@@ -260,28 +315,28 @@ mapeamento_indicadores_fluxo_etario <- function() {
   data.frame(
     INDICADOR = c(
       rep("AVANCADOS", 4),
-      rep("DEFASAGEM_I", 4),
+      rep("DEFASAGEM_I", 5),
       rep("DEFASAGEM_II", 3)
     ),
-    ETAPA_ENSINO = c(
+    ETAPA_ENSINO_ADEQUADA = c(
       "CRE", "PRE", "AI", "AF",
-      "PRE", "AI", "AF", "EM",
-      "AI", "AF", "EM"
+      "PRE", "AI", "AF", "EM", "POS_EM",
+      "AI", "EM", "POS_EM"
     ),
     ETAPA_MATRICULA = c(
       "PRE", "AI", "AF", "EM",
-      "CRE", "PRE", "AI", "AF",
-      "CRE", "PRE", "AI"
+      "CRE", "PRE", "AI", "AF", "EM",
+      "CRE", "AI", "AF"
     ),
     FAIXA_ETARIA = c(
       "0 a 3 anos", "0 a 5 anos", "0 a 10 anos", "0 a 14 anos",
-      "4 a 5 anos", "6 anos ou mais", "11 a 14 anos", "15 a 17 anos",
-      "6 anos ou mais", "6 anos ou mais", "15 a 17 anos"
+      "4 a 5 anos", "6 anos ou mais", "11 a 14 anos", "15 a 17 anos", "18 a 19 anos",
+      "6 anos ou mais", "15 a 17 anos", "18 a 19 anos"
     ),
     TIPO_CALCULO = c(
       "exato", "aproximado", "aproximado", "aproximado",
-      "exato", "aproximado", "exato", "exato",
-      "aproximado", "aproximado", "exato"
+      "exato", "aproximado", "exato", "exato", "exato",
+      "aproximado", "exato", "exato"
     ),
     stringsAsFactors = FALSE
   )
@@ -292,14 +347,14 @@ adicionar_matriculas_fluxo_etario <- function(indicadores, matriculas, mapeament
   col_matriculas <- paste0("MAT_", indicador)
   col_tipo <- paste0("TIPO_CALCULO_", indicador)
 
-  indicadores[[col_matriculas]] <- NA_real_
-  indicadores[[col_tipo]] <- "nao_aplicavel"
+  indicadores[[col_matriculas]] <- rep(NA_real_, nrow(indicadores))
+  indicadores[[col_tipo]] <- rep("nao_aplicavel", nrow(indicadores))
 
   for (i in seq_len(nrow(mapeamento))) {
-    etapa_ensino <- mapeamento$ETAPA_ENSINO[i]
+    etapa_ensino <- mapeamento$ETAPA_ENSINO_ADEQUADA[i]
     etapa_matricula <- mapeamento$ETAPA_MATRICULA[i]
     faixa_etaria <- mapeamento$FAIXA_ETARIA[i]
-    linhas <- indicadores$ETAPA_ENSINO == etapa_ensino
+    linhas <- indicadores$ETAPA_ENSINO_ADEQUADA == etapa_ensino
 
     if (!any(linhas)) {
       next
@@ -363,6 +418,20 @@ taxa_matricula_opcional <- function(matriculas, populacao) {
   resultado
 }
 
+percentual_matriculas_fora_faixa_opcional <- function(matriculas_fora_faixa, total_matriculas) {
+  resultado <- rep(NA_real_, length(matriculas_fora_faixa))
+  presentes <- !is.na(matriculas_fora_faixa) & !is.na(total_matriculas)
+
+  if (any(presentes)) {
+    resultado[presentes] <- percentual_matriculas_fora_faixa(
+      matriculas_fora_faixa[presentes],
+      total_matriculas[presentes]
+    )
+  }
+
+  resultado
+}
+
 validar_colunas <- function(dados, colunas, nome) {
   ausentes <- setdiff(colunas, names(dados))
 
@@ -377,15 +446,21 @@ validar_colunas <- function(dados, colunas, nome) {
 }
 
 validar_indicadores_observados <- function(indicadores) {
-  if (anyNA(indicadores$MAT_FAIXA_ADEQUADA)) {
+  faixas_com_etapa_regular <- indicadores$ETAPA_ENSINO_ADEQUADA != "POS_EM"
+
+  if (anyNA(indicadores$MAT_FAIXA_ADEQUADA[faixas_com_etapa_regular])) {
     stop("Ha combinacoes de UF, etapa e ano sem matriculas na faixa adequada.", call. = FALSE)
+  }
+
+  if (anyNA(indicadores$TOTAL_MATRICULAS[faixas_com_etapa_regular])) {
+    stop("Ha combinacoes de UF, etapa e ano sem total de matriculas.", call. = FALSE)
   }
 
   if (anyNA(indicadores$POP_FAIXA_ADEQUADA)) {
     stop("Ha combinacoes de UF, etapa e ano sem populacao correspondente.", call. = FALSE)
   }
 
-  if (any(indicadores$MAT_FAIXA_ADEQUADA > indicadores$TOTAL_MATRICULAS)) {
+  if (any(indicadores$MAT_FAIXA_ADEQUADA > indicadores$TOTAL_MATRICULAS, na.rm = TRUE)) {
     stop("Ha matriculas na faixa adequada maiores que o total de matriculas.", call. = FALSE)
   }
 
