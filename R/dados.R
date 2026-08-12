@@ -102,6 +102,14 @@ ler_projecao_populacional_ibge <- function(fonte = c("pacote", "motherduck"), co
   motherduck_read_sql(sql_path("projecao_populacional.sql"), con = con)
 }
 
+#' Ler estimativa populacional municipal de 2025
+#'
+#' @return Data frame com populacao estimada por UF, municipio e ano.
+#' @export
+ler_populacao_municipio_2025 <- function() {
+  read_package_parquet("pop_municipio_2025.parquet")
+}
+
 read_package_parquet <- function(file) {
   path <- package_data_path(file)
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
