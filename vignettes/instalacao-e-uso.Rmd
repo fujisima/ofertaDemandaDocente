@@ -144,24 +144,25 @@ indicadores_observados <- calcular_indicadores_matricula_observados(
 )
 ```
 
-Defina metas gerais por etapa de ensino. Os nomes dos vetores devem corresponder
-aos valores de `ETAPA_ENSINO_ADEQUADA` usados nos indicadores observados:
+Defina metas gerais por faixa etária. A faixa `18 a 19 anos` deve ter apenas
+meta de taxa bruta, pois nao possui taxa liquida:
 
 ```{r}
 metas <- criar_metas_indicadores_gerais(
-  taxa_liquida_matricula = c(
-    CRE = 60,
-    PRE = 98,
-    AI = 99,
-    AF = 98,
-    EM = 95
+  taxa_bruta_matricula = c(
+    "0 a 3 anos" = 70,
+    "4 a 5 anos" = 99,
+    "6 a 10 anos" = 99,
+    "11 a 14 anos" = 99,
+    "15 a 17 anos" = 99,
+    "18 a 19 anos" = 40
   ),
-  percentual_matriculas_fora_faixa = c(
-    CRE = 5,
-    PRE = 3,
-    AI = 2,
-    AF = 4,
-    EM = 6
+  taxa_liquida_matricula = c(
+    "0 a 3 anos" = 60,
+    "4 a 5 anos" = 98,
+    "6 a 10 anos" = 99,
+    "11 a 14 anos" = 98,
+    "15 a 17 anos" = 95
   ),
   ano_target = 2036
 )
@@ -169,10 +170,10 @@ metas <- criar_metas_indicadores_gerais(
 metas
 ```
 
-Por fim, projete indicadores e matrículas:
+Projete os indicadores por faixa etária:
 
 ```{r, eval = FALSE}
-projecao <- projetar_indicadores_matricula(
+indicadores_projetados <- projetar_indicadores_matricula(
   indicadores_observados = indicadores_observados,
   populacao = populacao,
   metas = metas,
@@ -180,7 +181,29 @@ projecao <- projetar_indicadores_matricula(
   ano_base = 2025
 )
 
-head(projecao)
+head(indicadores_projetados)
+```
+
+Em seguida, componha a tabela final de matrículas por etapa de ensino:
+
+```{r, eval = FALSE}
+matriculas_etapa_projetadas <- compor_matriculas_etapa_projetadas(
+  indicadores_projetados
+)
+
+head(matriculas_etapa_projetadas)
+```
+
+Para consultar uma UF em formato wide:
+
+```{r, eval = FALSE}
+matriculas_etapa_projetadas |>
+  dplyr::filter(NO_UF == "Acre") |>
+  dplyr::select(ANO, ETAPA_ENSINO, TOTAL_MATRICULAS) |>
+  tidyr::pivot_wider(
+    names_from = ETAPA_ENSINO,
+    values_from = TOTAL_MATRICULAS
+  )
 ```
 
 ## Validação local

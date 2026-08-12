@@ -30,14 +30,16 @@ library(ofertaDemandaDocente)
 ## Dados incluídos no pacote
 
 As funções `ler_matricula_faixaetaria()`,
-`ler_matricula_faixaetaria_etapa()` e `ler_projecao_populacional_ibge()` leem,
-por padrão, snapshots em Parquet incluídos no pacote. Assim, depois da
-instalação, é possível carregar os dados sem configurar conexão com o MotherDuck:
+`ler_matricula_faixaetaria_etapa()`, `ler_projecao_populacional_ibge()` e
+`ler_populacao_municipio_2025()` leem, por padrão, snapshots em Parquet
+incluídos no pacote. Assim, depois da instalação, é possível carregar os dados
+sem configurar conexão com o MotherDuck:
 
 ```r
 matriculas <- ler_matricula_faixaetaria()
 matriculas_etapa <- ler_matricula_faixaetaria_etapa()
 populacao <- ler_projecao_populacional_ibge()
+pop_municipio <- ler_populacao_municipio_2025()
 ```
 
 ## Configuração do MotherDuck
@@ -93,6 +95,7 @@ Leia os dados incluídos no pacote:
 matriculas <- ler_matricula_faixaetaria()
 matriculas_etapa <- ler_matricula_faixaetaria_etapa()
 populacao <- ler_projecao_populacional_ibge()
+pop_municipio <- ler_populacao_municipio_2025()
 ```
 
 Para consultar diretamente o MotherDuck, use `fonte = "motherduck"`:
@@ -114,32 +117,33 @@ indicadores_observados <- calcular_indicadores_matricula_observados(
 )
 ```
 
-Crie metas gerais por etapa de ensino:
+Crie metas gerais por faixa etária:
 
 ```r
 metas <- criar_metas_indicadores_gerais(
-  taxa_liquida_matricula = c(
-    CRE = 60,
-    PRE = 98,
-    AI = 99,
-    AF = 98,
-    EM = 95
+  taxa_bruta_matricula = c(
+    "0 a 3 anos" = 70,
+    "4 a 5 anos" = 99,
+    "6 a 10 anos" = 99,
+    "11 a 14 anos" = 99,
+    "15 a 17 anos" = 99,
+    "18 a 19 anos" = 40
   ),
-  percentual_matriculas_fora_faixa = c(
-    CRE = 5,
-    PRE = 3,
-    AI = 2,
-    AF = 4,
-    EM = 6
+  taxa_liquida_matricula = c(
+    "0 a 3 anos" = 60,
+    "4 a 5 anos" = 98,
+    "6 a 10 anos" = 99,
+    "11 a 14 anos" = 98,
+    "15 a 17 anos" = 95
   ),
   ano_target = 2036
 )
 ```
 
-Projete os indicadores e as matrículas:
+Projete os indicadores por faixa etária:
 
 ```r
-projecao <- projetar_indicadores_matricula(
+indicadores_projetados <- projetar_indicadores_matricula(
   indicadores_observados = indicadores_observados,
   populacao = populacao,
   metas = metas,
@@ -147,13 +151,36 @@ projecao <- projetar_indicadores_matricula(
   ano_base = 2025
 )
 
-head(projecao)
+head(indicadores_projetados)
+```
+
+Componha a tabela final de matrículas por etapa de ensino:
+
+```r
+matriculas_etapa_projetadas <- compor_matriculas_etapa_projetadas(
+  indicadores_projetados
+)
+
+head(matriculas_etapa_projetadas)
+```
+
+Para consultar uma UF específica em formato wide:
+
+```r
+matriculas_etapa_projetadas |>
+  dplyr::filter(NO_UF == "Acre") |>
+  dplyr::select(ANO, ETAPA_ENSINO, TOTAL_MATRICULAS) |>
+  tidyr::pivot_wider(
+    names_from = ETAPA_ENSINO,
+    values_from = TOTAL_MATRICULAS
+  )
 ```
 
 ## Desenvolvimento
 
 Para atualizar os snapshots Parquet incluídos no pacote, configure o token do
-MotherDuck e execute o script de preparação a partir da raiz do projeto:
+MotherDuck, tenha o pacote `readxl` disponível para tratar o XLS de população
+municipal e execute o script de preparação a partir da raiz do projeto:
 
 ```r
 source("data-raw/gerar_dados_parquet.R")
@@ -165,6 +192,7 @@ O script gera:
 inst/extdata/matricula_faixaetaria.parquet
 inst/extdata/matricula_faixaetaria_etapa.parquet
 inst/extdata/projecao_populacional_ibge.parquet
+inst/extdata/pop_municipio_2025.parquet
 ```
 
 Rode os testes a partir da raiz do projeto:

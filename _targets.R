@@ -38,19 +38,20 @@ list(
   tar_target(
     metas_indicadores,
     criar_metas_indicadores_gerais(
-      taxa_liquida_matricula = c(
-        CRE = 70,
-        PRE = 99,
-        AI  = 99,
-        AF  = 99,
-        EM  = 99
+      taxa_bruta_matricula = c(
+        "0 a 3 anos" = 60,
+        "4 a 5 anos" = 100,
+        "6 a 10 anos" = 100,
+        "11 a 14 anos" = 100,
+        "15 a 17 anos" = 100,
+        "18 a 19 anos" = 10
       ),
-      percentual_matriculas_fora_faixa = c(
-        CRE = 1,
-        PRE = 1,
-        AI  = 5,
-        AF  = 5,
-        EM  = 5
+      taxa_liquida_matricula = c(
+        "0 a 3 anos" = 60,
+        "4 a 5 anos" = 100,
+        "6 a 10 anos" = 100,
+        "11 a 14 anos" = 95,
+        "15 a 17 anos" = 90
       ),
       ano_target = 2036
     )
@@ -64,5 +65,9 @@ list(
       anos = 2026:2036,
       ano_base = 2025
     )
+  ),
+  tar_target(
+    matriculas_etapa_projetadas,
+    compor_matriculas_etapa_projetadas(indicadores_matricula_projetados)
   )
 )

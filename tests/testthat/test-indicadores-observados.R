@@ -72,11 +72,15 @@ test_that("calcular_indicadores_matricula_observados calcula indicadores por UF,
   expect_equal(resultado$TAXA_AVANCADOS, c(5 / 1000, 12 / 300, 20 / 500, 30 / 600, NA, 6 / 900, 13 / 250, 21 / 450, 31 / 550, NA) * 100)
   expect_equal(resultado$TAXA_DEFASAGEM_I, c(NA, 8 / 300, 7 / 500, 14 / 600, 4 / 700, NA, 10 / 250, 8 / 450, 15 / 550, 5 / 650) * 100)
   expect_equal(resultado$TAXA_DEFASAGEM_II, c(NA, NA, 2 / 500, NA, 3 / 700, NA, NA, 3 / 450, NA, 4 / 650) * 100)
+  diferenca_taxa_bruta_liquida <- resultado$TAXA_BRUTA_MATRICULA - resultado$TAXA_LIQUIDA_MATRICULA
+  expect_equal(resultado$RZ_AVANCADOS, resultado$TAXA_AVANCADOS / diferenca_taxa_bruta_liquida)
+  expect_equal(resultado$RZ_DEF_1, resultado$TAXA_DEFASAGEM_I / diferenca_taxa_bruta_liquida)
+  expect_equal(resultado$RZ_DEF_2, resultado$TAXA_DEFASAGEM_II / diferenca_taxa_bruta_liquida)
   expect_equal(resultado$TIPO_CALCULO_AVANCADOS, c("exato", "aproximado", "aproximado", "aproximado", "nao_aplicavel", "exato", "aproximado", "aproximado", "aproximado", "nao_aplicavel"))
   expect_equal(resultado$TIPO_CALCULO_DEFASAGEM_I, c("nao_aplicavel", "exato", "aproximado", "exato", "exato", "nao_aplicavel", "exato", "aproximado", "exato", "exato"))
   expect_equal(resultado$TIPO_CALCULO_DEFASAGEM_II, c("nao_aplicavel", "nao_aplicavel", "aproximado", "nao_aplicavel", "exato", "nao_aplicavel", "nao_aplicavel", "aproximado", "nao_aplicavel", "exato"))
   expect_equal(
-    resultado$TAXA_BRUTA_MATRICULA - resultado$TAXA_LIQUIDA_MATRICULA,
+    diferenca_taxa_bruta_liquida,
     rowSums(
       data.frame(
         avancados = ifelse(is.na(resultado$TAXA_AVANCADOS), 0, resultado$TAXA_AVANCADOS),
@@ -149,4 +153,57 @@ test_that("mapeamento de fluxo etario evita dupla contagem em defasagem II", {
       stringsAsFactors = FALSE
     )
   )
+})
+
+test_that("calcular_indicadores_matricula_observados usa taxa liquida zero em 18 a 19 anos", {
+  matriculas <- data.frame(
+    ANO = rep(2025, each = 25),
+    NO_UF = "Acre",
+    ETAPA_ENSINO = c(
+      "CRE", "CRE", "CRE", "CRE",
+      "PRE", "PRE", "PRE", "PRE", "PRE",
+      "AI", "AI", "AI", "AI", "AI", "AI",
+      "AF", "AF", "AF", "AF", "AF", "AF",
+      "EM", "EM", "EM", "EM"
+    ),
+    ETAPA_ENSINO_NOME = c(
+      rep("Creche", 4),
+      rep("Pre-escola", 5),
+      rep("Anos iniciais", 6),
+      rep("Anos finais", 6),
+      rep("Ensino medio", 4)
+    ),
+    FAIXA_ETARIA = c(
+      "Total", "0 a 3 anos", "4 a 5 anos", "6 anos ou mais",
+      "Total", "0 a 3 anos", "4 a 5 anos", "6 anos ou mais", "6 a 10 anos",
+      "Total", "0 a 5 anos", "6 a 10 anos", "11 a 14 anos", "15 a 17 anos", "6 anos ou mais",
+      "Total", "0 a 10 anos", "11 a 14 anos", "15 a 17 anos", "6 a 10 anos", "18 a 19 anos",
+      "Total", "0 a 14 anos", "15 a 17 anos", "18 a 19 anos"
+    ),
+    QT_MAT = c(
+      120, 90, 10, 3,
+      220, 6, 200, 8, 2,
+      320, 13, 270, 15, 4, 0,
+      433, 21, 350, 5, 10, 3,
+      540, 31, 460, 12
+    ),
+    stringsAsFactors = FALSE
+  )
+  populacao <- data.frame(
+    SIGLA = "AC",
+    LOCAL = "Acre",
+    ETAPA_ENSINO = c("CRE", "PRE", "AI", "AF", "EM", "POS_EM"),
+    ANO = 2025,
+    POPULACAO = c(900, 250, 450, 550, 650, 700),
+    stringsAsFactors = FALSE
+  )
+
+  resultado <- calcular_indicadores_matricula_observados(matriculas, populacao, anos = 2025)
+  pos_em <- resultado[resultado$FAIXA_ETARIA == "18 a 19 anos", ]
+
+  expect_equal(pos_em$TAXA_LIQUIDA_MATRICULA, 0)
+  expect_equal(pos_em$TAXA_BRUTA_MATRICULA, 15 / 700 * 100)
+  expect_true(is.na(pos_em$RZ_AVANCADOS))
+  expect_equal(pos_em$RZ_DEF_1, 12 / 15)
+  expect_equal(pos_em$RZ_DEF_2, 3 / 15)
 })
