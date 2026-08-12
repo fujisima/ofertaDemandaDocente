@@ -16,8 +16,10 @@
 #'   matriculas na faixa adequada, avancados, defasagem I e defasagem II;
 #'   `MAT_FAIXA_ETARIA` mantem o total amplo por faixa etaria quando
 #'   `matriculas_faixaetaria` e informado. As taxas de avancados e defasagem
-#'   usam a populacao da faixa etaria como denominador; `TIPO_CALCULO_*` indica
-#'   se o numerador e exato, aproximado ou nao aplicavel.
+#'   usam a populacao da faixa etaria como denominador; `RZ_AVANCADOS`,
+#'   `RZ_DEF_1` e `RZ_DEF_2` indicam a razao de cada taxa no excesso da taxa
+#'   bruta sobre a taxa liquida; `TIPO_CALCULO_*` indica se o numerador e exato,
+#'   aproximado ou nao aplicavel.
 #' @importFrom stats aggregate
 #' @export
 calcular_indicadores_matricula_observados <- function(
@@ -137,6 +139,7 @@ calcular_indicadores_matricula_observados <- function(
     indicadores$MAT_FAIXA_ADEQUADA,
     indicadores$POP_FAIXA_ADEQUADA
   )
+  indicadores$TAXA_LIQUIDA_MATRICULA[indicadores$ETAPA_ENSINO_ADEQUADA == "POS_EM"] <- 0
   indicadores$MAT_TAXA_BRUTA_MATRICULA <- numerador_taxa_bruta_matricula(indicadores)
   indicadores$TAXA_BRUTA_MATRICULA <- taxa_bruta_matricula(
     indicadores$MAT_TAXA_BRUTA_MATRICULA,
@@ -157,6 +160,20 @@ calcular_indicadores_matricula_observados <- function(
   indicadores$TAXA_DEFASAGEM_II <- taxa_matricula_opcional(
     indicadores$MAT_DEFASAGEM_II,
     indicadores$POP_FAIXA_ADEQUADA
+  )
+  diferenca_taxa_bruta_liquida <- indicadores$TAXA_BRUTA_MATRICULA -
+    indicadores$TAXA_LIQUIDA_MATRICULA
+  indicadores$RZ_AVANCADOS <- razao_taxa_fora_faixa(
+    indicadores$TAXA_AVANCADOS,
+    diferenca_taxa_bruta_liquida
+  )
+  indicadores$RZ_DEF_1 <- razao_taxa_fora_faixa(
+    indicadores$TAXA_DEFASAGEM_I,
+    diferenca_taxa_bruta_liquida
+  )
+  indicadores$RZ_DEF_2 <- razao_taxa_fora_faixa(
+    indicadores$TAXA_DEFASAGEM_II,
+    diferenca_taxa_bruta_liquida
   )
 
   indicadores <- indicadores[order(indicadores$ANO, indicadores$NO_UF, indicadores$ORDEM_FAIXA_ETARIA), ]
@@ -183,6 +200,9 @@ calcular_indicadores_matricula_observados <- function(
     "TAXA_AVANCADOS",
     "TAXA_DEFASAGEM_I",
     "TAXA_DEFASAGEM_II",
+    "RZ_AVANCADOS",
+    "RZ_DEF_1",
+    "RZ_DEF_2",
     "TIPO_CALCULO_AVANCADOS",
     "TIPO_CALCULO_DEFASAGEM_I",
     "TIPO_CALCULO_DEFASAGEM_II"
@@ -346,7 +366,6 @@ adicionar_matriculas_fluxo_etario <- function(indicadores, matriculas, mapeament
   mapeamento <- mapeamento[mapeamento$INDICADOR == indicador, ]
   col_matriculas <- paste0("MAT_", indicador)
   col_tipo <- paste0("TIPO_CALCULO_", indicador)
-
   indicadores[[col_matriculas]] <- rep(NA_real_, nrow(indicadores))
   indicadores[[col_tipo]] <- rep("nao_aplicavel", nrow(indicadores))
 
@@ -413,6 +432,19 @@ taxa_matricula_opcional <- function(matriculas, populacao) {
       matriculas[presentes],
       populacao[presentes]
     )
+  }
+
+  resultado
+}
+
+razao_taxa_fora_faixa <- function(taxa, diferenca_taxa_bruta_liquida) {
+  resultado <- rep(NA_real_, length(taxa))
+  presentes <- !is.na(taxa) &
+    !is.na(diferenca_taxa_bruta_liquida) &
+    diferenca_taxa_bruta_liquida != 0
+
+  if (any(presentes)) {
+    resultado[presentes] <- taxa[presentes] / diferenca_taxa_bruta_liquida[presentes]
   }
 
   resultado
