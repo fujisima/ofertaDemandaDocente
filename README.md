@@ -30,16 +30,15 @@ library(ofertaDemandaDocente)
 ## Dados incluídos no pacote
 
 As funções `ler_matricula_faixaetaria()`,
-`ler_matricula_faixaetaria_etapa()`, `ler_projecao_populacional_ibge()` e
-`ler_populacao_municipio_2025()` leem, por padrão, snapshots em Parquet
-incluídos no pacote. Assim, depois da instalação, é possível carregar os dados
-sem configurar conexão com o MotherDuck:
+`ler_matricula_faixaetaria_etapa()` e `ler_projecao_populacional_ibge()` leem,
+por padrão, snapshots em Parquet incluídos no pacote. Assim, depois da
+instalação, é possível carregar os dados sem configurar conexão com o
+MotherDuck:
 
 ```r
 matriculas <- ler_matricula_faixaetaria()
 matriculas_etapa <- ler_matricula_faixaetaria_etapa()
 populacao <- ler_projecao_populacional_ibge()
-pop_municipio <- ler_populacao_municipio_2025()
 ```
 
 ## Configuração do MotherDuck
@@ -95,7 +94,6 @@ Leia os dados incluídos no pacote:
 matriculas <- ler_matricula_faixaetaria()
 matriculas_etapa <- ler_matricula_faixaetaria_etapa()
 populacao <- ler_projecao_populacional_ibge()
-pop_municipio <- ler_populacao_municipio_2025()
 ```
 
 Para consultar diretamente o MotherDuck, use `fonte = "motherduck"`:
@@ -192,7 +190,6 @@ O script gera:
 inst/extdata/matricula_faixaetaria.parquet
 inst/extdata/matricula_faixaetaria_etapa.parquet
 inst/extdata/projecao_populacional_ibge.parquet
-inst/extdata/pop_municipio_2025.parquet
 ```
 
 Rode os testes a partir da raiz do projeto:

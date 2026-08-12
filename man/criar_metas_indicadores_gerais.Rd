@@ -5,17 +5,18 @@
 \title{Criar tabela de metas gerais para indicadores de matricula}
 \usage{
 criar_metas_indicadores_gerais(
+  taxa_bruta_matricula,
   taxa_liquida_matricula,
-  percentual_matriculas_fora_faixa,
-  ano_target
+  ano_target = 2036
 )
 }
 \arguments{
-\item{taxa_liquida_matricula}{Vetor numerico nomeado com metas da taxa
-liquida de matricula por etapa de ensino.}
+\item{taxa_bruta_matricula}{Vetor numerico nomeado com metas da taxa bruta de
+matricula por faixa etaria.}
 
-\item{percentual_matriculas_fora_faixa}{Vetor numerico nomeado com metas do
-percentual de matriculas fora da faixa etaria por etapa de ensino.}
+\item{taxa_liquida_matricula}{Vetor numerico nomeado com metas da taxa
+liquida de matricula por faixa etaria. Nao deve incluir a faixa
+\code{"18 a 19 anos"}, para a qual nao ha taxa liquida.}
 
 \item{ano_target}{Ano em que as metas devem ser atingidas.}
 }
