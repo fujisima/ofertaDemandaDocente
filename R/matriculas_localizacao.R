@@ -283,7 +283,9 @@ ratear_matriculas_projetadas_por_localizacao <- function(
 }
 
 compor_matriculas_etapa_projetadas_localizacao <- function(
-  indicadores_projetados_localizacao
+  indicadores_projetados_localizacao,
+  percentuais_em_localizacao,
+  ano_referencia_composicao = 2025
 ) {
   validar_colunas(
     indicadores_projetados_localizacao,
@@ -294,6 +296,14 @@ compor_matriculas_etapa_projetadas_localizacao <- function(
       "MAT_DEFASAGEM_I", "MAT_DEFASAGEM_II"
     ),
     "indicadores_projetados_localizacao"
+  )
+  validar_colunas(
+    percentuais_em_localizacao,
+    c(
+      "ANO", "NO_UF", "GRUPO_LOCALIZACAO",
+      "P_EM_PROPEDEUTICO", "P_EM_EPT"
+    ),
+    "percentuais_em_localizacao"
   )
 
   if (nrow(indicadores_projetados_localizacao) == 0) {
@@ -352,18 +362,171 @@ compor_matriculas_etapa_projetadas_localizacao <- function(
     )
   })
 
-  resultado <- do.call(rbind, resultados)
-  ordem_etapa <- match(resultado$ETAPA_ENSINO, c("CRE", "PRE", "AI", "AF", "EM"))
-  ordem_grupo <- match(
-    resultado$grupo_localizacao,
-    c("Polo urbano", "Demais áreas")
-  )
-  resultado <- resultado[
-    order(resultado$ANO, resultado$NO_UF, ordem_etapa, ordem_grupo),
-  ]
-  row.names(resultado) <- NULL
+  resultado <- do.call(rbind, resultados) |>
+    dplyr::mutate(
+      grupo_localizacao = dplyr::recode(
+        grupo_localizacao,
+        "Polo urbano" = "Capital",
+        "Demais áreas" = "Interior"
+      )
+    )
 
-  resultado[, c(
+  detalhar_ensino_medio_localizacao(
+    matriculas_etapa = resultado,
+    percentuais_em_localizacao = percentuais_em_localizacao,
+    ano_referencia_composicao = ano_referencia_composicao
+  )
+}
+
+detalhar_ensino_medio_localizacao <- function(
+  matriculas_etapa,
+  percentuais_em_localizacao,
+  ano_referencia_composicao
+) {
+  percentuais_referencia <- percentuais_em_localizacao |>
+    dplyr::filter(ANO == ano_referencia_composicao) |>
+    dplyr::select(
+      NO_UF,
+      GRUPO_LOCALIZACAO,
+      P_EM_PROPEDEUTICO,
+      P_EM_EPT
+    )
+
+  if (nrow(percentuais_referencia) == 0) {
+    stop(
+      sprintf(
+        "Nao ha percentuais de composicao do ensino medio para %s.",
+        ano_referencia_composicao
+      ),
+      call. = FALSE
+    )
+  }
+
+  chaves_percentuais <- percentuais_referencia |>
+    dplyr::count(NO_UF, GRUPO_LOCALIZACAO, name = "n")
+  if (any(chaves_percentuais$n != 1)) {
+    stop(
+      paste(
+        "`percentuais_em_localizacao` deve ter uma linha por UF e grupo",
+        "de localizacao no ano de referencia."
+      ),
+      call. = FALSE
+    )
+  }
+
+  pares_incompletos <- xor(
+    is.na(percentuais_referencia$P_EM_PROPEDEUTICO),
+    is.na(percentuais_referencia$P_EM_EPT)
+  )
+  if (any(pares_incompletos)) {
+    stop(
+      paste(
+        "Os percentuais de propedeutico e EPT devem estar ambos",
+        "preenchidos ou ambos ausentes."
+      ),
+      call. = FALSE
+    )
+  }
+
+  percentuais_disponiveis <- percentuais_referencia |>
+    dplyr::filter(!is.na(P_EM_PROPEDEUTICO), !is.na(P_EM_EPT))
+  if (
+    any(percentuais_disponiveis$P_EM_PROPEDEUTICO < 0) ||
+      any(percentuais_disponiveis$P_EM_PROPEDEUTICO > 1) ||
+      any(percentuais_disponiveis$P_EM_EPT < 0) ||
+      any(percentuais_disponiveis$P_EM_EPT > 1) ||
+      any(abs(
+        percentuais_disponiveis$P_EM_PROPEDEUTICO +
+          percentuais_disponiveis$P_EM_EPT - 1
+      ) > 1e-8)
+  ) {
+    stop(
+      "Os percentuais de propedeutico e EPT devem estar entre 0 e 1 e somar 1.",
+      call. = FALSE
+    )
+  }
+
+  outras_etapas <- matriculas_etapa |>
+    dplyr::filter(ETAPA_ENSINO != "EM") |>
+    dplyr::mutate(
+      ETAPA_ENSINO_DETALHE = ETAPA_ENSINO,
+      ETAPA_ENSINO_DETALHE_NOME = ETAPA_ENSINO_NOME,
+      P_COMPOSICAO = 1,
+      ANO_REFERENCIA_COMPOSICAO = NA_integer_,
+      FONTE_COMPOSICAO = NA_character_
+    )
+
+  ensino_medio <- matriculas_etapa |>
+    dplyr::filter(ETAPA_ENSINO == "EM") |>
+    dplyr::left_join(
+      percentuais_referencia,
+      by = c(
+        "NO_UF",
+        "grupo_localizacao" = "GRUPO_LOCALIZACAO"
+      ),
+      relationship = "many-to-one"
+    )
+
+  percentuais_faltantes <- ensino_medio |>
+    dplyr::filter(
+      TOTAL_MATRICULAS > 0,
+      is.na(P_EM_PROPEDEUTICO) | is.na(P_EM_EPT)
+    ) |>
+    dplyr::distinct(NO_UF, grupo_localizacao)
+
+  if (nrow(percentuais_faltantes) > 0) {
+    chaves_faltantes <- paste(
+      percentuais_faltantes$NO_UF,
+      percentuais_faltantes$grupo_localizacao,
+      sep = "/"
+    )
+    stop(
+      sprintf(
+        paste(
+          "Ha matriculas projetadas positivas sem percentual de composicao",
+          "do ensino medio: %s."
+        ),
+        paste(chaves_faltantes, collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+
+  ensino_medio_proped <- ensino_medio |>
+    dplyr::mutate(
+      ETAPA_ENSINO_DETALHE = "EM_PROP",
+      ETAPA_ENSINO_DETALHE_NOME = "Ensino medio propedeutico",
+      P_COMPOSICAO = P_EM_PROPEDEUTICO,
+      ANO_REFERENCIA_COMPOSICAO = as.integer(ano_referencia_composicao),
+      FONTE_COMPOSICAO = sprintf(
+        "Censo Escolar %s",
+        ano_referencia_composicao
+      ),
+      TOTAL_MATRICULAS = dplyr::if_else(
+        TOTAL_MATRICULAS == 0 & is.na(P_COMPOSICAO),
+        0,
+        TOTAL_MATRICULAS * P_COMPOSICAO
+      )
+    )
+
+  ensino_medio_ept <- ensino_medio |>
+    dplyr::mutate(
+      ETAPA_ENSINO_DETALHE = "EM_EPT",
+      ETAPA_ENSINO_DETALHE_NOME = "Ensino medio EPT",
+      P_COMPOSICAO = P_EM_EPT,
+      ANO_REFERENCIA_COMPOSICAO = as.integer(ano_referencia_composicao),
+      FONTE_COMPOSICAO = sprintf(
+        "Censo Escolar %s",
+        ano_referencia_composicao
+      ),
+      TOTAL_MATRICULAS = dplyr::if_else(
+        TOTAL_MATRICULAS == 0 & is.na(P_COMPOSICAO),
+        0,
+        TOTAL_MATRICULAS * P_COMPOSICAO
+      )
+    )
+
+  colunas_resultado <- c(
     "ANO",
     "UF",
     "SIGLA_UF",
@@ -372,8 +535,45 @@ compor_matriculas_etapa_projetadas_localizacao <- function(
     "grupo_localizacao",
     "ETAPA_ENSINO",
     "ETAPA_ENSINO_NOME",
+    "ETAPA_ENSINO_DETALHE",
+    "ETAPA_ENSINO_DETALHE_NOME",
+    "P_COMPOSICAO",
+    "ANO_REFERENCIA_COMPOSICAO",
+    "FONTE_COMPOSICAO",
     "TOTAL_MATRICULAS"
-  )]
+  )
+
+  resultado <- dplyr::bind_rows(
+    outras_etapas,
+    ensino_medio_proped,
+    ensino_medio_ept
+  ) |>
+    dplyr::select(dplyr::all_of(colunas_resultado)) |>
+    dplyr::mutate(
+      ordem_etapa = match(
+        ETAPA_ENSINO,
+        c("CRE", "PRE", "AI", "AF", "EM")
+      ),
+      ordem_detalhe = match(
+        ETAPA_ENSINO_DETALHE,
+        c("CRE", "PRE", "AI", "AF", "EM_PROP", "EM_EPT")
+      ),
+      ordem_grupo = match(
+        grupo_localizacao,
+        c("Capital", "Interior")
+      )
+    ) |>
+    dplyr::arrange(
+      ANO,
+      NO_UF,
+      ordem_etapa,
+      ordem_detalhe,
+      ordem_grupo
+    ) |>
+    dplyr::select(-ordem_etapa, -ordem_detalhe, -ordem_grupo)
+
+  row.names(resultado) <- NULL
+  resultado
 }
 
 sigla_uf_ibge <- function(codigo_uf) {

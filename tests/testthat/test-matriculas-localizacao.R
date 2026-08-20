@@ -100,10 +100,19 @@ test_that("composicao por etapa preserva totais entre grupos de localizacao", {
   demais$criterio_localizacao <- "Capital"
   polo$grupo_localizacao <- "Polo urbano"
   demais$grupo_localizacao <- "Demais áreas"
+  percentuais_em <- data.frame(
+    ANO = 2025,
+    NO_UF = "Acre",
+    GRUPO_LOCALIZACAO = c("Capital", "Interior"),
+    P_EM_PROPEDEUTICO = c(0.8, 0.7),
+    P_EM_EPT = c(0.2, 0.3)
+  )
 
   resultado_uf <- compor_matriculas_etapa_projetadas(indicadores_uf)
   resultado_localizacao <- compor_matriculas_etapa_projetadas_localizacao(
-    rbind(polo, demais)
+    indicadores_projetados_localizacao = rbind(polo, demais),
+    percentuais_em_localizacao = percentuais_em,
+    ano_referencia_composicao = 2025
   )
   totais_localizacao <- aggregate(
     TOTAL_MATRICULAS ~ ANO + SIGLA_UF + NO_UF + ETAPA_ENSINO,
@@ -118,5 +127,64 @@ test_that("composicao por etapa preserva totais entre grupos de localizacao", {
   expect_equal(
     totais_localizacao$TOTAL_MATRICULAS,
     resultado_uf$TOTAL_MATRICULAS
+  )
+  expect_equal(
+    unique(resultado_localizacao$grupo_localizacao),
+    c("Capital", "Interior")
+  )
+  expect_equal(
+    unique(
+      resultado_localizacao$ETAPA_ENSINO_DETALHE[
+        resultado_localizacao$ETAPA_ENSINO == "EM"
+      ]
+    ),
+    c("EM_PROP", "EM_EPT")
+  )
+  expect_equal(
+    resultado_localizacao$P_COMPOSICAO[
+      resultado_localizacao$ETAPA_ENSINO == "EM"
+    ],
+    c(0.8, 0.7, 0.2, 0.3)
+  )
+})
+
+test_that("composicao ausente aceita total zero e rejeita total positivo", {
+  matriculas <- data.frame(
+    ANO = 2030,
+    UF = 53,
+    SIGLA_UF = "DF",
+    NO_UF = "Distrito Federal",
+    criterio_localizacao = "Capital",
+    grupo_localizacao = "Interior",
+    ETAPA_ENSINO = "EM",
+    ETAPA_ENSINO_NOME = "Ensino medio",
+    TOTAL_MATRICULAS = 0
+  )
+  percentuais <- data.frame(
+    ANO = 2025,
+    NO_UF = "Distrito Federal",
+    GRUPO_LOCALIZACAO = "Interior",
+    P_EM_PROPEDEUTICO = NA_real_,
+    P_EM_EPT = NA_real_
+  )
+
+  resultado <- detalhar_ensino_medio_localizacao(
+    matriculas_etapa = matriculas,
+    percentuais_em_localizacao = percentuais,
+    ano_referencia_composicao = 2025
+  )
+
+  expect_equal(resultado$ETAPA_ENSINO_DETALHE, c("EM_PROP", "EM_EPT"))
+  expect_equal(resultado$TOTAL_MATRICULAS, c(0, 0))
+  expect_true(all(is.na(resultado$P_COMPOSICAO)))
+
+  matriculas$TOTAL_MATRICULAS <- 100
+  expect_error(
+    detalhar_ensino_medio_localizacao(
+      matriculas_etapa = matriculas,
+      percentuais_em_localizacao = percentuais,
+      ano_referencia_composicao = 2025
+    ),
+    "sem percentual de composicao"
   )
 })

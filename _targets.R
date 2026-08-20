@@ -2,6 +2,7 @@ library(targets)
 
 source("R/motherduck.R")
 source("R/dados.R")
+source("R/composicao_ensino_medio.R")
 source("R/indicadores_matricula.R")
 source("R/indicadores_observados.R")
 source("R/matriculas_localizacao.R")
@@ -18,6 +19,7 @@ tar_option_set(
     "duckdb",
     "PNADcIBGE",
     "dplyr",
+    "readxl",
     "survey",
     "tibble",
     "tidyr"
@@ -25,6 +27,26 @@ tar_option_set(
 )
 
 list(
+  tar_target(
+    composicao_rm_2025_arquivo,
+    "data-raw/Composicao_RM_2025_v2.xls",
+    format = "file"
+  ),
+  tar_target(
+    municipios_capital_rm_2025,
+    ler_municipios_capital_rm(composicao_rm_2025_arquivo)
+  ),
+  tar_target(
+    matriculas_em_municipio_2025,
+    ler_matriculas_em_municipio_2025()
+  ),
+  tar_target(
+    percentuais_em_localizacao_2025,
+    calcular_percentuais_em_localizacao(
+      matriculas_em_municipio = matriculas_em_municipio_2025,
+      municipios_capital_rm = municipios_capital_rm_2025
+    )
+  ),
   tar_target(
     ano_pnadc_localizacao,
     2025
@@ -122,7 +144,9 @@ list(
   tar_target(
     matriculas_etapa_projetadas_localizacao,
     compor_matriculas_etapa_projetadas_localizacao(
-      indicadores_matricula_projetados_localizacao
+      indicadores_projetados_localizacao = indicadores_matricula_projetados_localizacao,
+      percentuais_em_localizacao = percentuais_em_localizacao_2025,
+      ano_referencia_composicao = 2025
     )
   )
 )
