@@ -65,10 +65,21 @@ ler_matriculas_em_municipio_2025 <- function(con = NULL) {
     on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   }
 
-  motherduck_read_sql(
+  resultado <- motherduck_read_sql(
     sql_path("matriculas_em_municipio_2025.sql"),
     con = con
   )
+
+  validar_colunas(
+    resultado,
+    c(
+      "ANO", "NO_UF", "COD_MUN", "QT_MAT_EM_TOTAL",
+      "QT_MAT_EM_PROPEDEUTICO", "QT_MAT_EM_EPT"
+    ),
+    "matriculas_em_municipio_2025"
+  )
+
+  resultado
 }
 
 calcular_percentuais_em_localizacao <- function(
